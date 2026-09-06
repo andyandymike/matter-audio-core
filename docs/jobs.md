@@ -18,15 +18,16 @@ belongs to the example subprocess only; it is not a production CLI option.
 
 ## Upgrade an existing workspace
 
-Existing core 0.2 databases need schema version 2. First stop active clients and
+Core 0.4 uses schema version 3; 0.2/0.3 databases need migration. Stop active clients and
 keep a backup if rollback to an older installation matters, then run:
 
 ```sh
 matter-audio --workspace <workspace> session migrate
 ```
 
-Migration adds job/batch tables in one SQLite transaction. It does not change
-existing audio, selections, feedback or receipts. Queries never migrate; they
+Migration adds job/batch tables and the revision constraint column as needed
+in one SQLite transaction. Existing audio, historical content, feedback, receipts
+and frozen job resolutions are preserved. Queries never migrate; they
 return `session_migration_required` for an older database. Older core binaries
 reject the upgraded database. Newly created sessions use the current schema.
 
@@ -57,7 +58,8 @@ matter-audio --workspace <workspace> job list --session bgm-main
 ```
 
 Submission resolves and freezes the input digests, operation profile and effective
-parameters, then atomically queues the job. `run` executes synchronously in that
+parameters and, since core 0.4, the session constraint policy, then atomically
+queues the job. `run` executes synchronously in that
 CLI process. Another process may inspect or cancel it. Repeated `run` on a
 terminal job returns its state without executing. Failed jobs require an explicit
 retry; repeated `run` does not retry them.
@@ -101,7 +103,11 @@ A retry starts a new, numbered attempt with a new audio request ID. Prior claims
 results and errors remain. Parameters cannot change under an existing job; changed
 parameters require a new job. Changed input digests, profiles or resolved values
 also conflict. A deterministic error such as clipping will fail again until a
-new job changes the parameters.
+new job changes the parameters. Changed constraint policies also require a new
+job, including adding locks after an unlocked submission. A late candidate with
+the same policy may finish, while selection still checks the current revision.
+Legacy 0.3 attempts keep their original resolution and cannot run or retry under
+newly added nonempty locks. See [protected editing](regions.md).
 
 ```json
 {
@@ -129,7 +135,7 @@ It cannot reclaim a running job. Recovery itself never reruns an operation.
 
 Submit through `job cancel --request <file>`. Queued jobs can be marked cancelled
 immediately. Running jobs remain `cancel_requested` until the worker acknowledges
-the request. Core gain and level inspection check between sample chunks; every
+the request. Core gain, fade and level inspection check between sample chunks; every
 operation also checks at execution/publication boundaries. Product extensions
 without internal checkpoints can stop only at those boundaries. Blocking I/O and
 external process trees have no bounded cancellation latency here. Ctrl+C in a

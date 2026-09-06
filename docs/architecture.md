@@ -72,9 +72,15 @@ precedes the short registration/selection transaction. Recovery verifies already
 published groups without rerunning the operation. Retries create separate attempts
 only after a worker has stopped. See [jobs and recovery](jobs.md).
 
+Core 0.4 adds immutable PCM lock policies on revisions (SQLite schema 3).
+`regions.py` projects exact ranges through recorded identity/slice lineage;
+`fades.py` implements a separate Q24 fade profile. Operation adapters optionally
+declare mappings and write ranges. Protected resolution checks those declarations,
+execution verifies actual output PCM, and selection verifies the chosen lineage.
+See [protected edits](regions.md) for constraints, restore semantics and boundaries.
+
 Remaining increments are:
 
-- Protected PCM regions, generic fades and product-specific candidate preparation.
 - A small listening interface and explicit selected-version export.
 - Optional model-based editing and additional host transports.
 

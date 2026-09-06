@@ -8,7 +8,8 @@ from datetime import datetime, timezone
 
 from .actions import ActionService, Registry
 from .artifacts import ArtifactStore
-from .contracts import canonical, parse_json, validate
+from .contracts import PROTECTION_REF, canonical, fingerprint, parse_json, validate
+from .regions import make_constraints, project_constraints
 from .errors import AudioError
 from .session_contracts import IDENTIFIER, MUTATIONS, REVISION, page_parameters
 from .session_db import DATABASE_VERSION, SessionDatabase
@@ -26,6 +27,7 @@ def revision_record(row: sqlite3.Row) -> dict:
     return {"session_id": row["session_id"], "revision": row["revision"],
             "parent_revision": row["parent_revision"], "selected_asset": document(row["asset_json"]),
             "reason": row["reason"], "restored_from_revision": row["restored_from_revision"],
+            "constraints": document(row["constraints_json"]),
             "created_at": row["created_at"]}
 
 
@@ -90,10 +92,12 @@ class SessionService:
         return self.store.playback_refs({"outputs": [record]})
 
     @staticmethod
-    def _insert_revision(connection, session_id, revision, asset, reason, created_at, restored=None):
-        connection.execute("INSERT INTO revisions VALUES (?, ?, ?, ?, ?, ?, ?)", (
+    def _insert_revision(connection, session_id, revision, asset, reason, created_at, restored=None, constraints=None):
+        connection.execute("""INSERT INTO revisions
+            (session_id, revision, parent_revision, asset_json, reason, restored_from_revision, created_at, constraints_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)""", (
             session_id, revision, revision - 1 if revision > 1 else None,
-            canonical(asset).decode(), reason, restored, created_at))
+            canonical(asset).decode(), reason, restored, created_at, canonical(constraints).decode()))
         return revision_record(SessionService._revision(connection, session_id, revision))
 
     def mutate(self, operation: str, request: dict) -> dict:
@@ -113,6 +117,8 @@ class SessionService:
                 result = self._create(connection, request, created_at, branch=operation == "branch")
             elif operation == "select":
                 result = self._select(connection, request, created_at)
+            elif operation == "constraints":
+                result = self._set_constraints(connection, request, created_at)
             else:
                 result = self._feedback(connection, request, created_at)
             response = {"schema": "matter-session-mutation/v1", "status": "succeeded",
@@ -127,17 +133,21 @@ class SessionService:
         if connection.execute("SELECT 1 FROM sessions WHERE session_id = ?", (session_id,)).fetchone():
             raise AudioError("session_exists", f"Session already exists: {session_id}")
         origin_session, origin_revision = None, None
+        constraints = None
         if branch:
             origin_session, origin_revision = request["from_session"], request["from_revision"]
             self._session(connection, origin_session)
-            asset = document(self._revision(connection, origin_session, origin_revision)["asset_json"])
+            source = self._revision(connection, origin_session, origin_revision)
+            asset = document(source["asset_json"])
+            constraints = document(source["constraints_json"])
             self._verify_asset(asset)
+            project_constraints(self.store, constraints, asset["asset_id"] if asset else None)
         else:
             asset = self._asset(request["asset_id"]) if "asset_id" in request else None
         connection.execute("INSERT INTO sessions VALUES (?, ?, 1, ?, ?, ?)", (
             session_id, request["name"], created_at, origin_session, origin_revision))
         revision = self._insert_revision(connection, session_id, 1, asset,
-                                         "branch" if branch else "create", created_at)
+                                         "branch" if branch else "create", created_at, constraints=constraints)
         return {"revision": revision}
 
     def _select(self, connection, request, created_at):
@@ -151,15 +161,62 @@ class SessionService:
             raise AudioError("revision_limit", "Session reached its revision limit; branch into a new session")
         restored = request.get("from_revision")
         if restored is not None:
-            asset = document(self._revision(connection, session_id, restored)["asset_json"])
+            source = self._revision(connection, session_id, restored)
+            asset = document(source["asset_json"])
+            constraints = document(source["constraints_json"])
             self._verify_asset(asset)
         else:
             asset = self._asset(request["asset_id"])
+            constraints = document(self._revision(connection, session_id, expected)["constraints_json"])
+        project_constraints(self.store, constraints, asset["asset_id"] if asset else None)
         revision = self._insert_revision(connection, session_id, expected + 1, asset,
-                                         "restore" if restored is not None else "select", created_at, restored)
+                                         "restore" if restored is not None else "select", created_at, restored, constraints)
         connection.execute("UPDATE sessions SET head_revision = ? WHERE session_id = ?",
                            (expected + 1, session_id))
         return {"revision": revision}
+
+    def _set_constraints(self, connection, request, created_at):
+        session_id, expected = request["session_id"], request["expected_revision"]
+        session = self._session(connection, session_id)
+        if session["head_revision"] != expected:
+            raise AudioError("revision_conflict", "Read the current selection before changing PCM locks")
+        if expected == REVISION["maximum"]:
+            raise AudioError("revision_limit", "Session reached its revision limit")
+        asset = document(self._revision(connection, session_id, expected)["asset_json"])
+        self._verify_asset(asset)
+        constraints = make_constraints(self.store, asset, request["regions"])
+        revision = self._insert_revision(connection, session_id, expected + 1, asset, "constraints", created_at,
+                                         constraints=constraints)
+        connection.execute("UPDATE sessions SET head_revision = ? WHERE session_id = ?", (expected + 1, session_id))
+        return {"revision": revision}
+
+    def constraints(self, session_id, *, revision=None):
+        validate(session_id, IDENTIFIER)
+        if revision is not None:
+            validate(revision, REVISION)
+        with self.database.transaction() as connection:
+            session = self._session(connection, session_id)
+            number = session["head_revision"] if revision is None else revision
+            row = revision_record(self._revision(connection, session_id, number))
+        asset = row["selected_asset"]
+        return {"schema": "matter-constraints/v1", "availability": "available", "session_id": session_id,
+                "revision": number, "constraints": row["constraints"],
+                "mapped_regions": project_constraints(self.store, row["constraints"], asset["asset_id"] if asset else None)}
+
+    def protection(self, reference, input_asset_id):
+        validate(reference, PROTECTION_REF)
+        with self.database.transaction() as connection:
+            session = self._session(connection, reference["session_id"])
+            current = self._revision(connection, reference["session_id"], session["head_revision"])
+            bound = self._revision(connection, reference["session_id"], reference["revision"])
+            constraints = document(bound["constraints_json"])
+            if fingerprint(document(current["constraints_json"])) != fingerprint(constraints):
+                raise AudioError("constraint_conflict", "Constraint set changed; read current context and submit a new request")
+            selected = document(bound["asset_json"])
+        if constraints and constraints["regions"] and (selected is None or selected["asset_id"] != input_asset_id):
+            raise AudioError("constraint_input_mismatch", "Protected action must use the selected asset at its bound revision")
+        return {"reference": reference, "constraints": constraints, "constraints_digest": fingerprint(constraints),
+                "input_regions": project_constraints(self.store, constraints, input_asset_id)}
 
     def _feedback(self, connection, request, created_at):
         session_id, number = request["session_id"], request["revision"]
@@ -208,6 +265,9 @@ class SessionService:
         with self.database.transaction() as connection:
             result = self._show(connection, session_id, offset, limit)
         result["playback"] = self._verify_asset(result["current"]["selected_asset"])
+        current = result["current"]
+        result["protected_regions"] = project_constraints(self.store, current["constraints"],
+            current["selected_asset"]["asset_id"] if current["selected_asset"] else None)
         return result
 
     def _feedback_list(self, connection, session_id, revision, offset, limit, *, asset=None):
@@ -271,7 +331,9 @@ class SessionService:
                 "current_feedback": relevant["feedback"], "current_feedback_next_offset": relevant["next_offset"],
                 "measurements": measurements, "measurement_method": "pcm16-levels/v1",
                 "capabilities": self.registry.capabilities(), "playback": playback, "audio_model_calls": 0,
-                "constraints": {"availability": "not_implemented"},
+                "constraints": {"availability": "available", "policy": state["current"]["constraints"],
+                    "mapped_regions": project_constraints(self.store, state["current"]["constraints"],
+                                                          asset["asset_id"] if asset else None)},
                 "jobs": jobs,
                 "limitations": ["Feedback is attributed to its recorded source; it is not verified listening acceptance.",
                                 "Direct actions do not select outputs; managed jobs may request guarded selection."]}

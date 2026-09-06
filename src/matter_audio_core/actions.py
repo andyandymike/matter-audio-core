@@ -11,8 +11,10 @@ from .artifacts import ArtifactStore, Publication
 from .contracts import ACTION_SCHEMA, fingerprint, object_schema, validate
 from .errors import AudioError
 from .execution import checkpoint
+from .fades import FADE_PROFILE, FADE_SCHEMA, fade, fade_writes, identity_mapping, resolve_fade
+from .regions import check_plan, verify_regions
 from .media import (PROFILE, PCM, decode_wav, encode_wav, gain, gain_multiplier,
-                    inspect, trim)
+                    inspect, trim, Q24)
 
 
 @dataclass(frozen=True)
@@ -22,6 +24,8 @@ class Operation:
     resolve: Callable[[dict, PCM], dict]
     execute: Callable[[dict, PCM], tuple[PCM | None, dict]]
     profile: str = PROFILE
+    mapping: Callable[[dict, PCM], dict] | None = None
+    writes: Callable[[dict, PCM], list] | None = None
 
 
 class Registry:
@@ -44,6 +48,7 @@ class Registry:
         return [{"operation": op.name, "profile": op.profile,
                  "parameters_schema": op.parameters_schema, "availability": "available",
                  "realization": "deterministic", "verification": "exact_pcm_and_measurements",
+                 "pcm_region_protection": "supported" if op.mapping and op.writes else "unavailable",
                  "evidence": {"kind": "implementation", "core_version": __version__,
                               "scope": "Local execution evidence is stored per result; no quality claim."}}
                 for op in self._operations.values()]
@@ -67,6 +72,11 @@ def _gain_execute(parameters: dict, pcm: PCM) -> tuple[PCM, dict]:
                     "time_mapping": {"kind": "identity", "frame_count": pcm.frames}}
 
 
+def _trim_mapping(parameters, pcm):
+    return {"kind": "slice", "source_start_frame": parameters["start_frame"],
+            "output_start_frame": 0, "frame_count": parameters["end_frame"] - parameters["start_frame"]}
+
+
 def builtin_operations() -> list[Operation]:
     integer = {"type": "integer", "minimum": 0, "maximum": 230400000}
     seconds = {"type": "number", "minimum": 0, "maximum": 86400}
@@ -77,19 +87,25 @@ def builtin_operations() -> list[Operation]:
             "limit": {"type": "integer", "minimum": 1, "maximum": 128}}, []),
             lambda p, pcm: {"window_frames": p.get("window_frames", max(1, pcm.sample_rate // 10)),
                             "offset": p.get("offset", 0), "limit": p.get("limit", 128)},
-            lambda p, pcm: (None, inspect(pcm, **p)), "pcm16-levels/v1"),
+            lambda p, pcm: (None, inspect(pcm, **p)), "pcm16-levels/v1",
+            mapping=identity_mapping, writes=lambda p, pcm: []),
         Operation("gain/v1", object_schema({
             "db": {"type": "number", "minimum": -60, "maximum": 24},
             "clip": {"enum": ["reject", "saturate"]}}, ["db"]),
             lambda p, pcm: {"db": p["db"], "gain_q24": gain_multiplier(p["db"]),
-                            "clip": p.get("clip", "reject")}, _gain_execute),
+                            "clip": p.get("clip", "reject")}, _gain_execute,
+            mapping=identity_mapping, writes=lambda p, pcm: [] if p["gain_q24"] == Q24 else [
+                {"start_frame": 0, "end_frame": pcm.frames}]),
         Operation("trim/v1", {"oneOf": [
             object_schema({"start_frame": integer, "end_frame": integer}),
             object_schema({"start_seconds": seconds, "end_seconds": seconds})]},
             _trim_resolve,
             lambda p, pcm: (trim(pcm, p["start_frame"], p["end_frame"]), {
                 "time_mapping": {"kind": "slice", "source_start_frame": p["start_frame"],
-                                 "output_start_frame": 0, "frame_count": p["end_frame"] - p["start_frame"]}})),
+                                 "output_start_frame": 0, "frame_count": p["end_frame"] - p["start_frame"]}}),
+            mapping=_trim_mapping, writes=lambda p, pcm: []),
+        Operation("fade/v1", FADE_SCHEMA, resolve_fade, fade, FADE_PROFILE,
+                  mapping=identity_mapping, writes=fade_writes),
     ]
 
 
@@ -107,6 +123,16 @@ class ActionService:
                 "inputs": [{"asset_id": record["asset_id"], "digest": record["digest"]}],
                 "profile": operation.profile, "effective_parameters": operation.resolve(request["parameters"], pcm),
                 "audio_model_calls": 0, "unverified_goals": []}
+        if "protection" in request:
+            from .sessions import SessionService
+            protection = SessionService(self.store, self.registry).protection(request["protection"], record["asset_id"])
+            parameters = body["effective_parameters"]
+            mapping = operation.mapping(parameters, pcm) if operation.mapping else None
+            writes = operation.writes(parameters, pcm) if operation.writes else None
+            protection["output_regions"] = check_plan(protection["input_regions"], mapping, writes, pcm.frames)
+            protection["time_mapping"] = mapping
+            protection["write_ranges"] = writes
+            body["protection"] = protection
         return {**body, "digest": fingerprint(body)}
 
     def execute(self, request: dict, *, expected_resolution_digest: str | None = None) -> dict:
@@ -124,6 +150,25 @@ class ActionService:
             pcm = decode_wav(data)
             output, observation = operation.execute(resolution["effective_parameters"], pcm)
             checkpoint(force=True)
+            if "protection" in resolution:
+                from .sessions import SessionService
+                bound = resolution["protection"]
+                fresh = SessionService(self.store, self.registry).protection(request["protection"], record["asset_id"])
+                if fresh["constraints_digest"] != bound["constraints_digest"]:
+                    raise AudioError("constraint_conflict", "Constraints changed during execution")
+                if bound["input_regions"]:
+                    if output is not None:
+                        if (output.sample_rate, output.channels) != (pcm.sample_rate, pcm.channels):
+                            raise AudioError("constraint_violation", "Protected PCM format changed")
+                        if observation.get("time_mapping") != bound["time_mapping"] or output.frames != bound["time_mapping"]["frame_count"]:
+                            raise AudioError("constraint_mapping_unavailable", "Actual output mapping differs from the preview")
+                        verify_regions(output, bound["output_regions"])
+                    else:
+                        verify_regions(pcm, bound["input_regions"])
+                observation = {**observation, "protection": {
+                    "method": "pcm-region-sha256/v1", "constraints_digest": bound["constraints_digest"],
+                    "status": "verified" if bound["input_regions"] else "no_regions",
+                    "regions": bound["output_regions"] if output is not None else bound["input_regions"]}}
             if output is not None:
                 publication.add(encode_wav(output), output.facts(),
                                 parents=[{"role": "source", "asset_id": record["asset_id"], "digest": record["digest"]}],

@@ -196,7 +196,8 @@ class SessionTests(unittest.TestCase):
         self.assertAlmostEqual(after["measurements"][0]["levels"]["rms_dbfs"] -
                                before["measurements"][0]["levels"]["rms_dbfs"], -3, places=2)
         self.assertEqual(after["feedback"][0]["revision"], 2)
-        self.assertEqual(after["constraints"]["availability"], "not_implemented")
+        self.assertEqual(after["constraints"]["availability"], "available")
+        self.assertIsNone(after["constraints"]["policy"])
         self.assertEqual(after["jobs"]["availability"], "available")
         self.assertEqual(after["jobs"]["items"], [])
         self.assertEqual(after["audio_model_calls"], 0)

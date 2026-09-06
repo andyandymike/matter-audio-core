@@ -3,13 +3,14 @@
 [English](README.md)
 
 供工具和编程代理使用的本地音频制作核心：导入 WAV、检查电平、调整增益、
-按帧或秒裁剪，并为每次结果保留来源、摘要和处理参数。CLI 返回 JSON 和可播放的 WAV 路径。
+按帧或秒裁剪、淡入淡出，并为每次结果保留来源、摘要和处理参数。CLI 返回 JSON 和可播放的 WAV 路径。
 
 核心可独立使用，也可供 SonicMatter 和 ScoreMatter 共用。确定性操作无需 GPU、
 模型权重或 API key。[Codex 入口](docs/codex.md)通过配置好的产品 CLI 调用。
 
-当前版本为 **0.3.0，早期开发阶段**。面向 Windows / Linux、带标准库 SQLite 的 Python 3.10+。
+当前版本为 **0.4.0，早期开发阶段**。面向 Windows / Linux、带标准库 SQLite 的 Python 3.10+。
 持久会话已加入托管任务、显式中断恢复、批次失败项重试与 CPU 协作取消。
+PCM 区域锁支持在连续裁剪和淡入淡出中逐帧保留指定片段。
 macOS 的结果发布和生成式编辑尚未实现。
 
 ## 快速运行
@@ -38,6 +39,7 @@ Linux 环境创建 `.venv` 后使用 `source .venv/bin/activate`，再运行
 | `inspect/v1` | 可选窗口帧数、分页位置和数量 | 峰值、RMS、分声道和分页电平 |
 | `gain/v1` | `db`，可选 `clip` 策略 | 按明确 Q24 规则处理的 PCM16 WAV |
 | `trim/v1` | 帧或秒的起止坐标 | 精确裁剪；结束位置不包含在内 |
+| `fade/v1` | 帧或秒的淡入/淡出长度 | 线性振幅 Q24 淡化，其余 PCM 精确保留 |
 
 输入仅支持非空、最大 64 MiB、8–192 kHz 的单/双声道 PCM16 WAV。
 其他格式需要显式解码适配器。
@@ -70,8 +72,16 @@ Linux 环境创建 `.venv` 后使用 `source .venv/bin/activate`，再运行
 恢复已有完整结果，只重试失败候选，其他成功结果保持不变。
 `job submit / run / show / recover / cancel / retry` 和
 `batch submit / run / show / recover / retry` 提供对应操作。
-0.2 数据库升级需先执行 `session migrate`，已有音频和会话记录保持原样。
+0.2/0.3 数据库升级到 0.4 需先执行 `session migrate`，已有音频和历史内容保持原样。
 具体请求、取消确认与兼容边界见 [任务说明](docs/jobs.md)。
+
+运行 `python examples/regions_workflow.py` 可制作四个尾部包络不同的候选，选择 B 后锁定前缀，
+再连续裁剪尾部、淡出尾部。每一步使用新 CLI 进程，验证保护区 PCM 完全相同、越界请求失败、
+回退和分支保留当时的规则。长 BGM 可加 `--input <现有.wav> --protect-seconds 15`。
+
+`constraints set` 把保护区绑定到当前所选资产并新增修订。托管任务自动绑定约束，
+直接动作可显式绑定会话修订。普通选择不能丢弃锁定片段；恢复历史修订会同时恢复音频和当时的约束，
+包括恢复到未设锁的历史状态。请求和算法见 [保护区与淡化说明](docs/regions.md)。
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"

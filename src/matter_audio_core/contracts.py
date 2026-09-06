@@ -87,6 +87,9 @@ def read_json(path: Path):
         return parse_json(stream.read(MAX_JSON_BYTES + 1))
 
 
+PROTECTION_REF = object_schema({"session_id": {"type": "string", "pattern": REQUEST_PATTERN},
+                                "revision": {"type": "integer", "minimum": 1, "maximum": 2147483647}})
+
 ACTION_SCHEMA = object_schema({
     "schema": {"const": REQUEST_SCHEMA},
     "request_id": {"type": "string", "pattern": REQUEST_PATTERN},
@@ -94,7 +97,8 @@ ACTION_SCHEMA = object_schema({
     "inputs": {"type": "array", "minItems": 1, "maxItems": 1,
                "items": {"type": "string", "pattern": ASSET_PATTERN}},
     "parameters": {"type": "object"},
-})
+    "protection": PROTECTION_REF,
+}, ["schema", "request_id", "operation", "inputs", "parameters"])
 
 
 def request(request_id: str, operation: str, asset_id: str, parameters: dict) -> dict:

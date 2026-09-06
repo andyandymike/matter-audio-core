@@ -35,3 +35,7 @@ result group. Completed retries return the original result. Conflicts fail.
 An interrupted claim without a complete result reports `recovery_pending`;
 M1 does not automatically reclaim or rerun it. New requests with the same audio
 create distinct creative records. There is no implicit global result cache.
+
+Core 0.4 adds the separate `pcm16-fade-linear-q24/v1` profile. Its endpoint,
+rounding and unchanged-region rules are specified in [protected editing](regions.md#fade-profile).
+The gain, trim, inspection and Sonic fused Q15 profiles above are unchanged.

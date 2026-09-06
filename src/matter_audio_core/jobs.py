@@ -60,9 +60,16 @@ class JobService:
             raise AudioError("batch_not_found", f"Unknown batch: {batch_id}")
         return row
 
-    def _resolve(self, action):
+    def _resolve(self, action, protection=None):
         return self.actions.resolve({"schema": "matter-action/v1",
-                                     "request_id": "job-" + uuid.uuid4().hex, **action})
+                                     "request_id": "job-" + uuid.uuid4().hex, **action,
+                                     **({"protection": protection} if protection else {})})
+
+    def _legacy_guard(self, connection, session_id):
+        session = self.sessions._session(connection, session_id)
+        policy = document(self.sessions._revision(connection, session_id, session["head_revision"])["constraints_json"])
+        if policy and policy["regions"]:
+            raise AudioError("constraint_conflict", "Legacy job has no bound PCM locks; submit a new protected job")
 
     @staticmethod
     def _comparable(resolution):
@@ -81,6 +88,9 @@ class JobService:
         if connection.execute("SELECT 1 FROM jobs WHERE job_id = ?", (spec["job_id"],)).fetchone():
             raise AudioError("job_exists", "Job ID is already used; retry the original submission request")
         selection = spec.get("selection")
+        protection = resolution["request"].get("protection")
+        if protection and protection["revision"] != session["head_revision"]:
+            raise AudioError("revision_conflict", "Session changed while preparing the job; read current context")
         if selection and selection["expected_revision"] != session["head_revision"]:
             raise AudioError("revision_conflict", "Selection changed before job submission")
         created = timestamp()
@@ -137,12 +147,21 @@ class JobService:
             # Resolve audio snapshots outside the short write transaction.
             prepared = {}
             specs = [request] if operation == "submit" else request["items"] if operation == "batch_submit" else []
+            protection = None
+            if specs:
+                with self.database.transaction() as connection:
+                    session = self.sessions._session(connection, request["session_id"])
+                    protection = {"session_id": request["session_id"], "revision": session["head_revision"]}
             for spec in specs:
-                prepared[spec["job_id"]] = self._resolve(spec["action"])
+                prepared[spec["job_id"]] = self._resolve(spec["action"], protection)
             for job_id in retry_ids:
                 with self.database.transaction() as connection:
-                    spec = document(self._job(connection, job_id)["spec_json"])
-                prepared[job_id] = self._resolve(spec["action"])
+                    job = self._job(connection, job_id)
+                    spec = document(job["spec_json"])
+                    protection = document(self._attempt(connection, job)["resolution_json"])["request"].get("protection")
+                    if protection is None:
+                        self._legacy_guard(connection, job["session_id"])
+                prepared[job_id] = self._resolve(spec["action"], protection)
             with self.database.transaction(write=True) as connection:
                 previous = connection.execute("SELECT * FROM mutations WHERE request_id = ?",
                                               (request["request_id"],)).fetchone()
@@ -295,6 +314,8 @@ class JobService:
                     with self.database.transaction() as connection:
                         if self._job(connection, job_id)["state"] == "cancel_requested":
                             raise AudioError("job_cancelled", "Worker acknowledged cancellation at a CPU checkpoint")
+                        if "protection" not in resolution["request"]:
+                            self._legacy_guard(connection, job["session_id"])
 
                 try:
                     with checkpoints(check):

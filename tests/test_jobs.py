@@ -17,7 +17,7 @@ from unittest.mock import patch
 
 from matter_audio_core.actions import ActionService, Registry
 from matter_audio_core.artifacts import ArtifactStore
-from matter_audio_core.contracts import request
+from matter_audio_core.contracts import canonical, request
 from matter_audio_core.errors import AudioError
 from matter_audio_core.execution import checkpoint, checkpoints, job_lock
 from matter_audio_core.jobs import JobService
@@ -364,8 +364,12 @@ class JobTests(unittest.TestCase):
         old = ArtifactStore(self.root / "old")
         sessions = SessionService(old)
         with patch("matter_audio_core.session_db.DATABASE_VERSION", 1):
-            sessions.mutate("create", {"schema": "matter-session-create/v1", "request_id": "old-create",
-                                       "session_id": "saved", "name": "Saved empty session"})
+            # Write the actual historical schema; today's service writes v3 columns.
+            with sessions.database.transaction(write=True, create=True) as connection:
+                connection.execute("INSERT INTO sessions VALUES ('saved', 'Saved empty session', 1, 'old', NULL, NULL)")
+                connection.execute("INSERT INTO revisions VALUES ('saved', 1, NULL, 'null', 'create', NULL, 'old')")
+                receipt = canonical({"revision": {"revision": 1}}).decode()
+                connection.execute("INSERT INTO mutations VALUES ('old-create', '{}', ?, 'old')", (receipt,))
         database = old.root / DATABASE_NAME
         before = database.read_bytes()
         self.assert_code("session_migration_required", sessions.show, "saved")

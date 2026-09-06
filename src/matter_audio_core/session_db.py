@@ -9,7 +9,7 @@ from .artifacts import ArtifactStore, safe_path
 from .errors import AudioError
 
 DATABASE_NAME = "sessions.sqlite3"
-DATABASE_VERSION = 2
+DATABASE_VERSION = 3
 APPLICATION_ID = 0x4D415353
 
 # Execute individually: executescript() can implicitly commit pending work.
@@ -73,6 +73,8 @@ MIGRATIONS = {1: (
         PRIMARY KEY (batch_id, position), FOREIGN KEY (batch_id) REFERENCES batches(batch_id),
         FOREIGN KEY (job_id) REFERENCES jobs(job_id)
     )""",
+), 3: (
+    "ALTER TABLE revisions ADD COLUMN constraints_json TEXT NOT NULL DEFAULT 'null'",
 )}
 
 

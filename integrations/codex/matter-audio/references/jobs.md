@@ -68,5 +68,7 @@ after retry registration. Human listening feedback remains separate from these
 execution states.
 
 Direct `action execute` remains available, with legacy incomplete claims still
-reporting `recovery_pending`. Do not describe it as a managed job. Region locks,
-generic fades, model process cancellation and game integration remain separate.
+reporting `recovery_pending`. Do not describe it as a managed job. Core 0.4 jobs
+freeze the session's constraint policy automatically. Changed policies require a
+new request; read [protected editing](regions.md). Model process cancellation and
+game integration remain separate capabilities.

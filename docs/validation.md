@@ -18,7 +18,7 @@ bytes. Symlink checks skip when the host cannot create a test symlink.
 `tests/test_jobs.py` covers live process exclusion, actual process exits after
 claim/publication, registration rollback, explicit retry, partial batch failure,
 acknowledged cancellation, CPU checkpoints, stale selection/cancellation guards,
-frozen profiles, receipt replay, corruption and schema-1 to schema-2 migration.
+frozen profiles, receipt replay, corruption and migration from schema 1.
 `tests/job_worker.py` supplies bounded test-only subprocess fault/barrier fixtures.
 
 `examples/quickstart.py` exercises the installed CLI in subprocesses. It creates
@@ -30,7 +30,15 @@ fresh CLI subprocesses, restores the original audio and creates a branch. The
 example accepts an optional existing WAV; its note is explicitly an agent note,
 not user listening feedback. `examples/jobs_workflow.py` runs four candidates
 through injected I/O failure, abrupt process exit, recovery and targeted retry.
-CI runs all three examples against the installed wheel.
+`examples/regions_workflow.py` compares four candidate PCM payloads, protects a
+prefix, performs two edits and verifies restore/branch through fresh CLI processes.
+CI runs all four examples against the installed wheel.
+
+`tests/test_regions.py` covers stereo fade arithmetic/endpoints, half-up seconds,
+unchanged bytes, moving inner locks, forbidden writes/deletions, unprotected
+selection bypass, stale policies and changes during execution, false operation
+declarations, protected job recovery and schema-2 migration with frozen legacy
+job retry. These are exact technical checks, not listening judgments.
 
 CI runs these checks against an installed wheel on Windows and Linux with
 Python 3.10, 3.12 and 3.14. It builds the wheel from an sdist and checks package

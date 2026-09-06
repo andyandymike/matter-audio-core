@@ -6,7 +6,7 @@
 [简体中文](README.zh-CN.md)
 
 Local audio authoring primitives for tools and coding agents: import a WAV,
-inspect its levels, apply gain, trim by frames or seconds, and keep a verifiable
+inspect its levels, apply gain/fades, trim by frames or seconds, and keep a verifiable
 record of every result. Commands return JSON and paths to playable WAV files.
 
 The core runs independently and provides shared operations for SonicMatter and
@@ -14,9 +14,10 @@ ScoreMatter adapters. It does not require a GPU, model weights, API keys or an
 audio generation service. The optional [Codex integration](docs/codex.md) uses
 the standalone core or configured product CLIs.
 
-**Status:** `0.3.0`, early development. Windows and Linux, Python 3.10+ with
+**Status:** `0.4.0`, early development. Windows and Linux, Python 3.10+ with
 standard-library SQLite support. Persistent sessions now include managed jobs,
 explicit crash recovery, partial batch retries and cooperative CPU cancellation.
+PCM region locks preserve exact samples through continuous trim/fade edits.
 macOS publication and generative editing are not implemented.
 
 ## Quick start
@@ -87,6 +88,7 @@ Successful execution is not a listening-quality judgment.
 | `inspect/v1` | Optional `window_frames`, `offset`, `limit` | Peak/RMS, per-channel levels and paged windows |
 | `gain/v1` | `db`, optional `clip: reject` or `saturate` | PCM16 WAV with defined Q24 rounding |
 | `trim/v1` | `start_frame` + `end_frame`, or `start_seconds` + `end_seconds` | Exact slice; end is exclusive |
+| `fade/v1` | Fade-in/out lengths in frames or seconds | Linear-amplitude Q24 fade; untouched samples copied exactly |
 
 `matter-audio --workspace .local/example inspect <asset-id>` performs an
 inspection without creating an action record. `python -m matter_audio_core`
@@ -131,8 +133,25 @@ This four-candidate example injects one failed write and one process exit, then
 recovers the published result and retries only the failed candidate. Successful
 items retain their original results. `job submit / run / show / recover / cancel / retry`
 and `batch submit / run / show / recover / retry` expose the same workflow.
-Existing 0.2 databases need `session migrate` before use with 0.3.
+Existing 0.2/0.3 databases need `session migrate` before use with 0.4.
 See [job requests, cancellation and recovery](docs/jobs.md).
+
+## Preserve a region while editing
+
+```sh
+python examples/regions_workflow.py
+```
+
+This example creates four different tail fades, selects B, protects its prefix,
+trims the tail, then fades it again. Fresh CLI processes verify exact protected
+PCM, rejected conflicts, historical restore and an independent branch. Use
+`--input <existing.wav> --protect-seconds 15` for a sufficiently long BGM file.
+
+`constraints set` appends a revision containing locks anchored to the selected
+asset. Managed jobs bind those locks automatically; direct actions can bind an
+explicit session/revision. Ordinary selection verifies the candidate still
+preserves them. Restore brings back both historical audio and its constraints.
+See [protected editing and fade rules](docs/regions.md).
 
 See [architecture and roadmap](docs/architecture.md),
 [PCM16 processing rules](docs/pcm16-profile.md), and

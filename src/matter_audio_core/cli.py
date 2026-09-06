@@ -56,6 +56,11 @@ def build_parser(product: str, *, allow_import: bool = True) -> Parser:
         sessions.add_parser(name).add_argument("--request", type=Path, required=True)
     sessions.add_parser("request").add_argument("request_id")
     sessions.add_parser("migrate")
+    constraints = commands.add_parser("constraints").add_subparsers(dest="constraint_command", required=True)
+    constraints.add_parser("set").add_argument("--request", type=Path, required=True)
+    constraints_show = constraints.add_parser("show")
+    constraints_show.add_argument("session_id")
+    constraints_show.add_argument("--revision", type=int)
     for name in ("show", "list"):
         querying = sessions.add_parser(name)
         if name == "show":
@@ -99,6 +104,10 @@ def session_command(args, store, registry):
     # Audio-only commands and capability discovery do not open a database.
     from .sessions import SessionService
     service = SessionService(store, registry)
+    if args.command == "constraints":
+        if args.constraint_command == "set":
+            return service.mutate("constraints", read_json(args.request))
+        return service.constraints(args.session_id, revision=args.revision)
     if args.command == "session":
         if args.session_command == "migrate":
             return service.migrate()
@@ -155,7 +164,7 @@ def run(argv: Sequence[str] | None = None, *, product: str = "matter-audio",
                       "sessions": session_capabilities(),
                       "jobs": job_capabilities(),
                       "transport": "cli-json/v1", "audio_model_calls": 0,
-                      "limitations": ["Fades, region locks and model editing are not implemented."]}
+                      "limitations": ["Comparison UI, selected-version export and model editing are not implemented."]}
             if capability_extra:
                 result["product_capabilities"] = capability_extra()
         else:
@@ -187,7 +196,7 @@ def run(argv: Sequence[str] | None = None, *, product: str = "matter-audio",
                 else:
                     result = service.execute(read_json(args.request),
                                              expected_resolution_digest=args.expected_resolution_digest)
-            elif args.command in ("session", "feedback", "context"):
+            elif args.command in ("session", "feedback", "context", "constraints"):
                 result = session_command(args, store, registry)
             elif args.command in ("job", "batch"):
                 result = job_command(args, store, registry)

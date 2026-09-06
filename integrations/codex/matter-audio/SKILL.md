@@ -1,6 +1,6 @@
 ---
 name: matter-audio
-description: Use Matter Audio Core, SonicMatter or ScoreMatter for local sound-effect/BGM authoring, audio inspection, gain, trimming, persistent version selection and feedback. Use registered paper recordings through SonicMatter. Model generation and game integration are separate capabilities.
+description: Use Matter Audio Core, SonicMatter or ScoreMatter for local sound-effect/BGM authoring, inspection, gain, trim, fades, exact PCM protection, persistent selection and feedback. Use registered paper recordings through SonicMatter. Model generation and game integration are separate capabilities.
 ---
 
 # Matter audio authoring
@@ -63,4 +63,8 @@ For interrupted work or batches, check `capabilities.jobs` and read
 retried batch items and cooperative CPU cancellation. Prefer managed jobs when
 the task needs these guarantees; direct audio actions keep their legacy behavior.
 
-PCM region locks and generic fades remain future work.
+For requests to preserve an intro or transient while editing the rest, check
+`sessions.pcm_region_protection` and read [protected editing](references/regions.md).
+Core 0.4 adds PCM locks and generic `fade/v1`. Read current context before each
+continued edit; use managed jobs to bind the session's policy automatically.
+Keep the selected input, resolved frames and actual preservation evidence in view.

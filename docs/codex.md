@@ -53,6 +53,11 @@ job recovery after interruption and retry only stopped failed items with a concr
 reason. Existing 0.2 workspaces need `session migrate`; all clients sharing one
 workspace should use the same current core version.
 
-The skill returns verified playback paths and measured changes. Region locks
-and generic fades are not implemented. Audio generation remains a separate
+Core 0.4 adds a protected-editing Skill reference, `constraints set/show`, and
+`fade/v1`. Read current context before a continued edit. Managed jobs bind the
+session policy automatically; direct protected actions bind an exact revision.
+Upgrade 0.2/0.3 workspaces with `session migrate`. Restore includes the historical
+policy, so restoring an unlocked revision explicitly removes later locks.
+
+The skill returns verified playback paths and measured changes. Audio generation remains a separate
 product capability; installing the core does not enable it.

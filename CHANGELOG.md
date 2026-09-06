@@ -1,6 +1,19 @@
 # Changelog
 
-## 0.3.0 — Unreleased
+## 0.4.0 — Unreleased
+
+- Exact PCM region constraints anchored to immutable selected assets, with
+  identity/slice projection through successive edits, restores and branches.
+- Generic `fade/v1` with a distinct linear-amplitude Q24 profile, explicit
+  endpoints, frame/second lengths and cooperative CPU cancellation.
+- Resolve-time rejection of protected writes/deletions and verification of actual
+  output samples before publication. Ordinary selection also verifies locks.
+- Managed jobs freeze session constraints; changed policies require a new request.
+  Historical jobs retain their old resolution and cannot bypass newly added locks.
+- Transactional database schema 3, a four-candidate/two-edit CLI example and
+  updated Codex Skill instructions for protected editing.
+
+## 0.3.0 — 2026-09-06
 
 - Managed local jobs with frozen resolutions, numbered attempts and explicit
   recovery of published results without repeating audio execution.

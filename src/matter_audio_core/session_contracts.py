@@ -1,6 +1,7 @@
 """Versioned requests for durable authoring state, separate from audio actions."""
 
 from .contracts import ASSET_PATTERN, REQUEST_PATTERN, object_schema, validate
+from .regions import RANGE_SCHEMA
 
 IDENTIFIER = {"type": "string", "pattern": REQUEST_PATTERN}
 REVISION = {"type": "integer", "minimum": 1, "maximum": 2147483647}
@@ -36,8 +37,14 @@ FEEDBACK_SCHEMA = object_schema({
     "listening_context": {"type": "string", "maxLength": 2000},
 }, ["schema", "request_id", "session_id", "revision", "text", "source"])
 
+CONSTRAINTS_SCHEMA = object_schema({
+    "schema": {"const": "matter-constraints-set/v1"}, "request_id": IDENTIFIER,
+    "session_id": IDENTIFIER, "expected_revision": REVISION,
+    "regions": {"type": "array", "maxItems": 16, "items": RANGE_SCHEMA},
+})
+
 MUTATIONS = {"create": CREATE_SCHEMA, "select": SELECT_SCHEMA,
-             "branch": BRANCH_SCHEMA, "feedback": FEEDBACK_SCHEMA}
+             "branch": BRANCH_SCHEMA, "feedback": FEEDBACK_SCHEMA, "constraints": CONSTRAINTS_SCHEMA}
 
 
 def page_parameters(offset: int, limit: int) -> None:
@@ -51,7 +58,9 @@ def capabilities() -> dict:
     return {"schema": "matter-session-capabilities/v1", "availability": "available",
             "storage": "sqlite/v1", "mutation_schemas": MUTATIONS,
             "queries": ["session list", "session show", "session request",
-                        "feedback list", "context show"],
-            "migration_command": "session migrate", "database_schema_version": 2,
-            "limitations": ["Direct audio actions require explicit selection into a session.",
-                            "Region constraints are not implemented."]}
+                        "feedback list", "context show", "constraints show"],
+            "migration_command": "session migrate", "database_schema_version": 3,
+            "pcm_region_protection": {"availability": "available", "schema": "matter-pcm-constraints/v1",
+                                      "max_regions": 16, "mapping_kinds": ["identity", "slice"],
+                                      "verification": "pcm-region-sha256/v1"},
+            "limitations": ["Direct audio actions require explicit selection into a session."]}

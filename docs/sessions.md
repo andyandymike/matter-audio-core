@@ -34,6 +34,8 @@ nonfinite values and incorrectly typed revisions are rejected.
 | `feedback add --request <file>` | Attach verbatim feedback to an exact selected revision |
 | `feedback list <session-id>` | Read attributed feedback, optionally filtered by `--revision` |
 | `context show <session-id>` | Current selection, history, feedback, measurements and capabilities |
+| `constraints set --request <file>` | Replace exact PCM locks, appending a revision |
+| `constraints show <session-id>` | Policy and mapped ranges, optionally at `--revision` |
 
 `session show`, `session list` and `feedback list` accept `--offset` (default 0)
 and `--limit` (default 50, maximum 100). Follow `next_offset` for another page.
@@ -148,7 +150,9 @@ recent session feedback; `current_feedback` retrieves feedback on the currently
 selected asset even if that feedback belongs to an older revision restored
 later. Each item keeps its exact revision and attribution. Measurements remain
 separate from feedback. Additional pages are available through the query CLI.
-Region constraints explicitly report unavailable. Core 0.3 adds managed jobs to
+Core 0.4 includes the current policy and verified mapped regions.
+Ordinary selection preserves locks; restore and branch use the historical policy,
+including an unlocked state when explicitly restoring one. See [protected editing](regions.md). Core 0.3 adds managed jobs to
 resume context, with unfinished jobs first and a continuation query. See [jobs](jobs.md).
 
 ## Persistence and retries
@@ -159,8 +163,8 @@ state-mutation receipts. JSON responses are views/receipts, not a second editabl
 current-state file. Asset bytes and their immutable manifests stay in the
 existing `objects`/`requests` storage.
 
-Schema version 1 is initialized transactionally using an application ID and
-`PRAGMA user_version`. Known future migrations use the same transaction path;
+The current schema is initialized transactionally using an application ID and
+`PRAGMA user_version`. Known migrations use the same transaction path;
 newer or unrelated schemas are rejected without adoption. Queries do not create
 a missing database, perform migrations or append application records. SQLite
 may roll back an interrupted, uncommitted transaction when reopening the file,
@@ -177,8 +181,7 @@ audio actions. Use `context show` to learn the current state, since a replayed
 receipt describes the original mutation, not the current head.
 
 The original session capability was the first M2 increment. Core 0.3 adds job
-registration/recovery and batch management through an explicit schema-2 migration;
-run `session migrate` on an existing 0.2 database before using the new core.
-PCM region locks, fades, a comparison UI and selected-version export remain later
-work. SQLite transaction rollback alone does not recover an unfinished audio
+registration/recovery and batches (schema 2); core 0.4 adds PCM constraints
+(schema 3). Run `session migrate` on an existing 0.2/0.3 database before using
+0.4. A comparison UI and selected-version export remain later work. SQLite transaction rollback alone does not recover an unfinished audio
 action or establish full power-loss durability.

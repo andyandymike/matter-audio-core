@@ -80,6 +80,8 @@ def main() -> None:
         required.add("integrations/codex/matter-audio/references/sessions.md")
         required.update({"docs/jobs.md", "examples/jobs_workflow.py", "tests/test_jobs.py", "tests/job_worker.py",
                          "integrations/codex/matter-audio/references/jobs.md"})
+        required.update({"docs/regions.md", "examples/regions_workflow.py", "tests/test_regions.py",
+                         "integrations/codex/matter-audio/references/regions.md"})
         require(required <= relative, f"Missing sdist files: {sorted(required - relative)}")
         for name, data in {"LICENSE": license_bytes, **{"src/" + k: v for k, v in modules.items()}}.items():
             member = source.extractfile(f"{prefix}/{name}")
