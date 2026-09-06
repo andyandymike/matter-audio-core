@@ -1,0 +1,126 @@
+"""Reusable product CLI. All machine responses are one JSON object on stdout."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Callable, Sequence
+
+from . import __version__
+from .actions import ActionService, Registry
+from .artifacts import ArtifactStore
+from .contracts import read_json
+from .errors import AudioError
+
+
+class Parser(argparse.ArgumentParser):
+    def error(self, message):
+        raise AudioError("invalid_arguments", message)
+
+
+def build_parser(product: str, *, allow_import: bool = True) -> Parser:
+    parser = Parser(prog=product, description="Shared local audio authoring (M1)")
+    parser.add_argument("--version", action="version", version=__version__)
+    parser.add_argument("--workspace", type=Path, help="Explicit product workspace for assets and actions")
+    parser.add_argument("--json", action="store_true", help="JSON is also the default output")
+    commands = parser.add_subparsers(dest="command", required=True)
+    commands.add_parser("capabilities")
+    assets = commands.add_parser("assets").add_subparsers(dest="asset_command", required=True)
+    if allow_import:
+        importing = assets.add_parser("import")
+        importing.add_argument("path", type=Path)
+        importing.add_argument("--request-id", required=True)
+    showing = assets.add_parser("show")
+    showing.add_argument("asset_id")
+    listing = assets.add_parser("list")
+    listing.add_argument("--offset", type=int, default=0)
+    listing.add_argument("--limit", type=int, default=50)
+    inspecting = commands.add_parser("inspect")
+    inspecting.add_argument("asset_id")
+    inspecting.add_argument("--window-frames", type=int)
+    inspecting.add_argument("--offset", type=int, default=0)
+    inspecting.add_argument("--limit", type=int, default=128)
+    action = commands.add_parser("action").add_subparsers(dest="action_command", required=True)
+    for name in ("resolve", "execute"):
+        operation = action.add_parser(name)
+        operation.add_argument("--request", type=Path, required=True)
+        if name == "execute":
+            operation.add_argument("--expected-resolution-digest")
+    action.add_parser("show").add_argument("request_id")
+    return parser
+
+
+def emit(value: dict) -> None:
+    print(json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(",", ":")))
+
+
+def run(argv: Sequence[str] | None = None, *, product: str = "matter-audio",
+        registry: Registry | None = None, allow_import: bool = True,
+        extend_parser: Callable | None = None, handle_extra: Callable | None = None,
+        prepare_workspace: Callable | None = None, capability_extra: Callable | None = None) -> int:
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    # Permit --json after any subcommand while retaining argparse's normal help.
+    arguments = [arg for arg in arguments if arg != "--json"]
+    try:
+        parser = build_parser(product, allow_import=allow_import)
+        if extend_parser:
+            extend_parser(parser)
+        args = parser.parse_args(arguments)
+        registry = registry or Registry()
+        if args.command == "capabilities":
+            result = {"schema": "matter-capabilities/v1", "product": product,
+                      "core_version": __version__, "operations": registry.capabilities(),
+                      "transport": "cli-json/v1", "audio_model_calls": 0,
+                      "limitations": ["Sessions, fades, recovery and model editing are not implemented in M1."]}
+            if capability_extra:
+                result["product_capabilities"] = capability_extra()
+        else:
+            if args.workspace is None:
+                raise AudioError("workspace_required", "Pass --workspace before the command")
+            if prepare_workspace:
+                prepare_workspace(args.workspace)
+            store = ArtifactStore(args.workspace, product=product)
+            service = ActionService(store, registry)
+            if args.command == "assets":
+                if args.asset_command == "import":
+                    result = store.import_wav(args.path, args.request_id)
+                elif args.asset_command == "show":
+                    result = {"asset": store.asset(args.asset_id)[0]}
+                else:
+                    if not 0 <= args.offset or not 1 <= args.limit <= 100:
+                        raise AudioError("invalid_arguments", "Asset offset >= 0; limit 1..100")
+                    result = store.list_assets(offset=args.offset, limit=args.limit)
+            elif args.command == "inspect":
+                params = {"offset": args.offset, "limit": args.limit}
+                if args.window_frames is not None:
+                    params["window_frames"] = args.window_frames
+                result = service.inspect_asset(args.asset_id, params)
+            elif args.command == "action":
+                if args.action_command == "show":
+                    result = store.show_request(args.request_id)
+                elif args.action_command == "resolve":
+                    result = service.resolve(read_json(args.request))
+                else:
+                    result = service.execute(read_json(args.request),
+                                             expected_resolution_digest=args.expected_resolution_digest)
+            elif handle_extra:
+                result = handle_extra(args, store)
+            else:
+                raise AudioError("unsupported_command", args.command)
+            if "outputs" in result:
+                result = {**result, "playback": store.playback_refs(result)}
+        emit(result)
+        return 2 if result.get("status") == "failed" else 0
+    except AudioError as exc:
+        emit({"schema": "matter-error/v1", "status": "failed", "error": exc.document()})
+        return 2
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        emit({"schema": "matter-error/v1", "status": "failed",
+              "error": {"code": "io_or_integrity_error", "message": str(exc), "details": {}}})
+        return 2
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    return run(argv)

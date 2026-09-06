@@ -1,0 +1,12 @@
+{
+  "score": {
+    "python": "/absolute/path/to/score-matter/.venv/bin/python",
+    "root": "/absolute/path/to/score-matter",
+    "workspace": "/absolute/path/to/audio-workspaces/score"
+  },
+  "sonic": {
+    "python": "/absolute/path/to/sonic-matter/.venv/bin/python",
+    "root": "/absolute/path/to/sonic-matter",
+    "workspace": "/absolute/path/to/audio-workspaces/sonic"
+  }
+}

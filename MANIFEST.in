@@ -1,0 +1,12 @@
+include LICENSE README.md README.zh-CN.md CONTRIBUTING.md SECURITY.md CHANGELOG.md
+recursive-include docs *.md
+recursive-include examples *.py
+recursive-include integrations *.md *.py *.example.json
+recursive-include tests *.py
+recursive-include tools *.py
+prune .local
+prune .venv
+prune spec
+prune planning-private
+prune workspaces
+global-exclude *.py[cod] .env .env.* *.local.json *.wav *.ogg *.mp3 *.flac *.pem *.key

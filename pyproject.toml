@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=77.0.3,<82"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "matter-audio-core"
+version = "0.1.0"
+description = "Shared deterministic audio authoring tools for SonicMatter and ScoreMatter."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "Born Lu and contributors"}]
+keywords = ["audio", "pcm", "sound-effects", "authoring", "codex"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3 :: Only",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: Multimedia :: Sound/Audio",
+]
+dependencies = ["jsonschema==4.26.0", "rfc8785==0.1.4"]
+
+[project.optional-dependencies]
+dev = ["build>=1.2.2,<2", "twine>=6.1,<7"]
+
+[project.urls]
+Homepage = "https://github.com/andyandymike/matter-audio-core"
+Repository = "https://github.com/andyandymike/matter-audio-core"
+Issues = "https://github.com/andyandymike/matter-audio-core/issues"
+Documentation = "https://github.com/andyandymike/matter-audio-core#readme"
+Changelog = "https://github.com/andyandymike/matter-audio-core/blob/main/CHANGELOG.md"
+
+[project.scripts]
+matter-audio = "matter_audio_core.cli:main"
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["matter_audio_core*"]
+namespaces = false

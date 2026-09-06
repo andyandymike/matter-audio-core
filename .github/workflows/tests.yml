@@ -1,0 +1,68 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core:
+    name: ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+        python: ['3.10', '3.12', '3.14']
+    env:
+      PYTHONUTF8: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+      PIP_DISABLE_PIP_VERSION_CHECK: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install development dependencies
+        run: python -m pip install ".[dev]"
+      - name: Build sdist and wheel from sdist
+        run: python -m build
+      - name: Check package metadata and contents
+        shell: python
+        run: |
+          import pathlib
+          import subprocess
+          import sys
+          archives = sorted(str(p) for p in pathlib.Path('dist').iterdir() if p.is_file())
+          subprocess.run([sys.executable, '-m', 'twine', 'check', '--strict', *archives], check=True)
+          subprocess.run([sys.executable, 'tools/check_distribution.py', 'dist'], check=True)
+      - name: Install built wheel
+        shell: python
+        run: |
+          import pathlib
+          import subprocess
+          import sys
+          wheel, = pathlib.Path('dist').glob('*.whl')
+          subprocess.run([sys.executable, '-m', 'pip', 'install', '--force-reinstall', '--no-deps', str(wheel)], check=True)
+      - name: Check installed dependencies
+        run: python -m pip check
+      - name: Unit tests against installed package
+        run: python -m unittest discover -s tests -v
+      - name: CLI example
+        run: python examples/quickstart.py
+      - name: Console entry point
+        run: matter-audio capabilities --json
+      - name: Whitespace check
+        run: git diff --check
