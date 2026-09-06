@@ -12,11 +12,12 @@ record of every result. Commands return JSON and paths to playable WAV files.
 The core runs independently and provides shared operations for SonicMatter and
 ScoreMatter adapters. It does not require a GPU, model weights, API keys or an
 audio generation service. The optional [Codex integration](docs/codex.md) uses
-configured product CLIs.
+the standalone core or configured product CLIs.
 
-**Status:** `0.1.0`, early development. Windows and Linux, Python 3.10+.
-macOS publication is not implemented. Session history, listening feedback,
-automatic recovery and generative editing are future work.
+**Status:** `0.2.0`, early development. Windows and Linux, Python 3.10+ with
+standard-library SQLite support. Sessions now persist version selection,
+branching and attributed feedback. macOS publication, automatic audio job
+recovery and generative editing are not implemented.
 
 ## Quick start
 
@@ -102,6 +103,23 @@ Machine responses are one JSON object on stdout; failures return exit code 2.
   Changing the request under that ID fails with a conflict.
 - `recovery_pending` means a request is running or was interrupted. Query it
   with `action show`; this version does not automatically rerun or recover it.
+
+## Continue an authoring session
+
+```sh
+python examples/session_workflow.py
+```
+
+This example makes two versions, saves a selection and an agent note, resumes
+through fresh CLI processes, restores the original, and branches from the
+alternative. It verifies stale selections are rejected and original bytes are
+preserved. Use `--input <existing.wav>` to try it with your own audio.
+
+`session create / select / branch` save durable state in SQLite; `feedback add`
+binds attributed text to a revision. `context show <session-id>` retrieves the
+selected asset, history, relevant feedback and measurements. Audio actions
+produce candidates; selecting one is an explicit operation guarded by the
+expected revision. See [session requests and persistence](docs/sessions.md).
 
 See [architecture and roadmap](docs/architecture.md),
 [PCM16 processing rules](docs/pcm16-profile.md), and

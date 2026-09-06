@@ -32,6 +32,8 @@ def check_names(names: list[str]) -> None:
         require(not any(part.startswith(".") for part in path.parts), f"Hidden file in archive: {name}")
         require(path.suffix.lower() not in PRIVATE_SUFFIXES and not name.endswith(".local.json"),
                 f"Local artifact in archive: {name}")
+        require(".sqlite" not in path.name.lower() and not path.name.lower().endswith(
+            (".db", ".db-journal", ".db-wal", ".db-shm")), f"Local database in archive: {name}")
 
 
 def main() -> None:
@@ -71,9 +73,11 @@ def main() -> None:
         required = {"pyproject.toml", "LICENSE", "README.md", "README.zh-CN.md", "CONTRIBUTING.md",
                     "SECURITY.md", "CHANGELOG.md", "docs/architecture.md", "docs/pcm16-profile.md",
                     "docs/validation.md", "docs/codex.md", "examples/quickstart.py", "tests/test_core.py",
+                    "docs/sessions.md", "examples/session_workflow.py", "tests/test_sessions.py",
                     "integrations/codex/matter-audio/SKILL.md",
                     "integrations/codex/matter-audio/config.example.json",
                     "integrations/codex/matter-audio/scripts/run_audio.py", "tools/check_distribution.py"}
+        required.add("integrations/codex/matter-audio/references/sessions.md")
         require(required <= relative, f"Missing sdist files: {sorted(required - relative)}")
         for name, data in {"LICENSE": license_bytes, **{"src/" + k: v for k, v in modules.items()}}.items():
             member = source.extractfile(f"{prefix}/{name}")

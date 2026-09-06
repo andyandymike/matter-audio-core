@@ -6,13 +6,14 @@ this package in the workspace environment, ask Codex to run
 workspace to import and transform a user-selected WAV.
 
 The bundled [matter-audio skill](../integrations/codex/matter-audio/SKILL.md)
-provides a separate launcher for compatible SonicMatter and ScoreMatter product
-checkouts. It forwards structured CLI arguments; it does not contain either
+provides a launcher for the standalone core and compatible SonicMatter and
+ScoreMatter checkouts. It forwards structured CLI arguments; it does not contain either
 product, a model runtime or an audio service connection.
 
 ## Configure the product launcher
 
 1. Install a compatible product checkout with its authoring entry point:
+   `python -m matter_audio_core` for the standalone core,
    `python -m score_matter audio` for ScoreMatter or
    `python -m tools.authoring` from a SonicMatter checkout. Install this core
    wheel into that product's Python environment. Confirm its `capabilities`
@@ -27,7 +28,7 @@ product, a model runtime or an audio service connection.
 4. Run the launcher with the Python command from your environment:
 
 ```sh
-python integrations/codex/matter-audio/scripts/run_audio.py --product score -- capabilities --json
+python integrations/codex/matter-audio/scripts/run_audio.py --product core -- capabilities --json
 ```
 
 Use the installed skill's path instead if you copied it. `--config` selects a
@@ -40,7 +41,13 @@ authoring safeguards (under its `artifacts` tree with `.gdignore`); an explicit
 workspace outside the product checkout is another option. Use separate
 workspaces for the two products.
 
-The skill returns verified playback paths and measured changes. Persistent
-editing sessions, listening feedback, region locks and automatic recovery are
-not implemented in this version. Audio generation remains a separate product
-capability; installing the core does not enable it.
+Core 0.2 adds persistent sessions and attributed feedback. Check the installed
+CLI's `sessions` capability before using them; older product environments can
+still have core 0.1 installed. Use `context show <session-id>` when resuming and
+follow the skill's session reference for mutation schemas, revision guards and
+feedback attribution. Session state belongs to its configured product/workspace;
+switching launch targets does not transfer that state.
+
+The skill returns verified playback paths and measured changes. Region locks
+and automatic audio job recovery are not implemented. Audio generation remains
+a separate product capability; installing the core does not enable it.

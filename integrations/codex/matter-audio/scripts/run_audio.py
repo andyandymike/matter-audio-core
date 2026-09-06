@@ -13,7 +13,7 @@ from pathlib import Path
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=Path, default=Path(__file__).resolve().parents[1] / "config.local.json")
-    parser.add_argument("--product", choices=("sonic", "score"), required=True)
+    parser.add_argument("--product", choices=("core", "sonic", "score"), required=True)
     parser.add_argument("--workspace", type=Path)
     parser.add_argument("--timeout", type=int, default=120)
     parser.add_argument("command", nargs=argparse.REMAINDER)
@@ -29,14 +29,15 @@ def main():
         command = args.command[1:] if args.command[:1] == ["--"] else args.command
         if not command:
             command = ["capabilities", "--json"]
-        module = ["score_matter", "audio"] if args.product == "score" else ["tools.authoring"]
+        module = {"core": ["matter_audio_core"], "score": ["score_matter", "audio"],
+                  "sonic": ["tools.authoring"]}[args.product]
         environment = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1", "PYTHONUTF8": "1"}
         environment.pop("PYTHONPATH", None)
         completed = subprocess.run([str(executable), "-m", *module, "--workspace", str(workspace), *command],
                                    cwd=root, env=environment, timeout=args.timeout)
         return completed.returncode
     except subprocess.TimeoutExpired:
-        error = {"code": "host_timeout", "message": "Execution timed out; query the same request ID before another action."}
+        error = {"code": "host_timeout", "message": "Execution timed out; query the same ID with action show or session request before retrying."}
     except (OSError, ValueError, KeyError) as exc:
         error = {"code": "host_configuration_error", "message": str(exc)}
     print(json.dumps({"schema": "matter-error/v1", "status": "failed", "error": error}, ensure_ascii=False))

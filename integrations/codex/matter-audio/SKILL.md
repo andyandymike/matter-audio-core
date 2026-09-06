@@ -1,6 +1,6 @@
 ---
 name: matter-audio
-description: Use SonicMatter or ScoreMatter to inspect, crop, and adjust existing local audio, or prepare candidates from registered paper recordings. Use for local sound-effect/BGM authoring with these projects. Model generation, persistent editing sessions and game integration are separate capabilities.
+description: Use Matter Audio Core, SonicMatter or ScoreMatter for local sound-effect/BGM authoring, audio inspection, gain, trimming, persistent version selection and feedback. Use registered paper recordings through SonicMatter. Model generation and game integration are separate capabilities.
 ---
 
 # Matter audio authoring
@@ -9,8 +9,9 @@ Use the configured product CLI through `scripts/run_audio.py`. The sibling
 `config.local.json` supplies the local interpreter, product checkout and audio
 workspace. Keep that machine-local file separate from shared skill source.
 
-Choose `--product sonic` for registered recording/Foley work, or `--product score`
-for existing BGM. Use the user's selected product and asset; if neither is clear,
+Choose `--product core` for standalone WAV authoring, `--product sonic` for
+registered recording/Foley work, or `--product score` for ScoreMatter BGM.
+Use the user's selected product and asset; if neither is clear,
 inspect the current project context before choosing. Query `capabilities` for
 the installed operation schemas before creating requests.
 
@@ -44,7 +45,18 @@ Reuse a request ID when querying or retrying the same action. A different reques
 under that ID conflicts. On timeout or `recovery_pending`, query `action show`
 and report its actual state; do not start a new request to hide a retry.
 
-M1 has immutable snapshots and parent relationships, but no shared session,
-selection/feedback persistence, PCM region locks or automatic recovery. Do not
-claim these future operations worked. A local candidate and an imported asset
-do not by themselves establish user acceptance or consumer distribution rights.
+For continued work, check the installed CLI's `sessions` capability, then read
+[session requests](references/sessions.md). Core 0.2 adds durable selection,
+branching and attributed feedback; an older product installation may not expose
+them. Read `context show <session-id>` when resuming. Select a completed output
+explicitly using the observed revision; an audio action does not change the
+session's selection on its own.
+
+Store the user's actual feedback verbatim with `source: agent_relay`, bound to
+the revision they evaluated. Use `source: agent` for the agent's own notes or
+hypotheses. User observations and measurements are separate evidence. Never
+invent a listening verdict. A local candidate and an imported asset do not by
+themselves establish acceptance or consumer distribution rights.
+
+PCM region locks, generic fades and automatic audio job recovery remain future
+work. Session persistence does not imply that those operations are available.

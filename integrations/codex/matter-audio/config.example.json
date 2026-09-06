@@ -1,4 +1,9 @@
 {
+  "core": {
+    "python": "/absolute/path/to/matter-audio-core/.venv/bin/python",
+    "root": "/absolute/path/to/matter-audio-core",
+    "workspace": "/absolute/path/to/audio-workspaces/core"
+  },
   "score": {
     "python": "/absolute/path/to/score-matter/.venv/bin/python",
     "root": "/absolute/path/to/score-matter",

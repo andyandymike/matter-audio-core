@@ -1,6 +1,17 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — Unreleased
+
+- Transactional SQLite sessions, version selection, history-preserving restores
+  and independent branches from an explicit revision.
+- Revision-guarded selection and idempotent state-mutation receipts, with
+  queryable request IDs and rollback on interruption.
+- Verbatim feedback tied to an exact revision, preserving user/agent attribution.
+- Bounded context queries combining selection, history, feedback and measurements.
+- A standalone core route in the Codex launcher and a session-workflow example
+  that resumes through fresh CLI processes.
+- Existing 0.1 audio assets and action contracts remain usable; PCM processing
+  profiles are unchanged. This is the first M2 increment, not the full M2 scope.
 
 ## 0.1.0 — 2026-09-06
 

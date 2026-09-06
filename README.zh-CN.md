@@ -8,8 +8,9 @@
 核心可独立使用，也可供 SonicMatter 和 ScoreMatter 共用。确定性操作无需 GPU、
 模型权重或 API key。[Codex 入口](docs/codex.md)通过配置好的产品 CLI 调用。
 
-当前版本为 **0.1.0，早期开发阶段**。面向 Windows / Linux、Python 3.10+；
-macOS 的结果发布尚未实现。持久会话、试听反馈、自动恢复和生成式编辑仍属于后续工作。
+当前版本为 **0.2.0，早期开发阶段**。面向 Windows / Linux、带标准库 SQLite 的 Python 3.10+。
+已加入持久会话、版本选择/回退/分支及带来源的反馈记录。
+macOS 的结果发布、音频任务自动恢复和生成式编辑尚未实现。
 
 ## 快速运行
 
@@ -50,6 +51,20 @@ Linux 环境创建 `.venv` 后使用 `source .venv/bin/activate`，再运行
 [架构与路线图](docs/architecture.md)。
 
 ## 开发与许可
+
+继续制作的完整示例：
+
+```powershell
+.\.venv\Scripts\python.exe examples/session_workflow.py
+```
+
+流程为导入 A、制作并选择 B、保存代理备注、重新启动进程读取状态、回退 A、从 B 建立分支。
+每次调用都使用新进程，验证状态不依赖聊天内存。可加 `--input <现有.wav>` 使用自己的音频。
+示例备注明确标为代理来源，不冒充用户试听结论。
+
+`session create / select / branch` 保存制作状态，`feedback add` 绑定具体修订，
+`context show <session-id>` 返回当前选择、历史、相关反馈和测量。
+选择时必须提供预期修订，回退也会新增记录。完整 JSON 请求见 [会话说明](docs/sessions.md)。
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"

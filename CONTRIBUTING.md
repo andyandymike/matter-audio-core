@@ -14,6 +14,7 @@ as described in the [README](README.md), then run:
 python -m pip install -e ".[dev]"
 python -m unittest discover -s tests -v
 python examples/quickstart.py
+python examples/session_workflow.py
 python -m build
 python -m twine check --strict dist/*
 python tools/check_distribution.py dist
@@ -33,6 +34,10 @@ metadata, installs the wheel, runs the unit suite and the CLI example, and
 checks the installed entry point. The matrix covers Windows/Linux with Python
 3.10, 3.12 and 3.14. Product adapter tests are separate; this repository's CI
 does not require sibling repositories or external audio.
+
+Session changes also need meaningful transaction, revision-conflict or restart
+coverage. Test feedback is synthetic; never present it as actual user listening
+evidence. Keep SQLite databases and journal files out of source and packages.
 
 ## Changes to audio behavior
 

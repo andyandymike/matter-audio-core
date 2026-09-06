@@ -8,9 +8,21 @@ level windows, strict JSON/types, immutable input snapshots, tampering, request
 conflicts, incomplete publication, concurrent duplicate requests, no-replace
 publication and product workspace separation.
 
+`tests/test_sessions.py` adds state persistence, restored versions, independent
+branches, verbatim feedback, source attribution, pagination, request replay,
+concurrent selections, schema ownership/migration rollback, and database
+reopening after abrupt process exit with uncommitted writes. It also verifies
+existing asset bytes are preserved and ordinary queries do not change database
+bytes. Symlink checks skip when the host cannot create a test symlink.
+
 `examples/quickstart.py` exercises the installed CLI in subprocesses. It creates
 its own signal and checks gain, trim and completed-request retries. It does not
 download recordings or call an audio model.
+
+`examples/session_workflow.py` resumes a saved selection and agent note across
+fresh CLI subprocesses, restores the original audio and creates a branch. The
+example accepts an optional existing WAV; its note is explicitly an agent note,
+not user listening feedback. CI runs both examples against the installed wheel.
 
 CI runs these checks against an installed wheel on Windows and Linux with
 Python 3.10, 3.12 and 3.14. It builds the wheel from an sdist and checks package

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Callable
 
+from . import __version__
 from .artifacts import ArtifactStore, Publication
 from .contracts import ACTION_SCHEMA, fingerprint, object_schema, validate
 from .errors import AudioError
@@ -42,7 +43,7 @@ class Registry:
         return [{"operation": op.name, "profile": op.profile,
                  "parameters_schema": op.parameters_schema, "availability": "available",
                  "realization": "deterministic", "verification": "exact_pcm_and_measurements",
-                 "evidence": {"kind": "implementation", "core_version": "0.1.0",
+                 "evidence": {"kind": "implementation", "core_version": __version__,
                               "scope": "Local execution evidence is stored per result; no quality claim."}}
                 for op in self._operations.values()]
 

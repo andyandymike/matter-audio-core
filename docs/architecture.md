@@ -13,6 +13,9 @@ or recording pipelines.
 | `artifacts` | Stable input reads, product-scoped workspaces, complete groups and request claims |
 | `actions` | Versioned registry, parameter resolution and operation execution |
 | `cli` | Shared argument parsing, JSON responses and product extension hooks |
+| `session_contracts` | Strict versioned session and feedback requests |
+| `session_db` | SQLite ownership, schema migrations and atomic transactions |
+| `sessions` | Version selection, branching, feedback and bounded resume context |
 
 An adapter can add an `Operation` to a `Registry` and pass it to `cli.run` or
 `ActionService`. It owns any decoding, rights registration or model dependency.
@@ -40,6 +43,7 @@ the current implementation does not reclaim it automatically.
 ```text
 workspace/
   workspace.json       # Schema and owning product
+  sessions.sqlite3     # Optional, authoritative authoring state from core 0.2
   objects/<group-id>/  # Manifest, digest and complete output inventory
   requests/<id>/       # Immutable request claim
   .staging/            # Unpublished work owned by the store
@@ -54,9 +58,13 @@ database or a security boundary. See [processing rules](pcm16-profile.md) and
 ## Roadmap
 
 The first increment (M1) contains the snapshot store, versioned deterministic
-operations and CLI extension points. Potential later increments are:
+operations and CLI extension points. Core 0.2 implements the first M2 increment:
+SQLite sessions, selection/history, branches, attributed feedback and context
+queries. Audio actions create candidates; an explicit, revision-guarded selection
+records the chosen output. See [persistent sessions](sessions.md).
 
-- Session/revision storage, candidate selection and persistent listening feedback.
+Remaining increments are:
+
 - Explicit recovery procedures for interrupted requests.
 - Protected PCM regions, candidate batches and a small listening interface.
 - Optional model-based editing and additional host transports.

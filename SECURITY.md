@@ -26,3 +26,9 @@ separate access controls and isolation.
 Only Windows and Linux publication primitives are implemented. Files are
 flushed before publication, but full power-loss durability of filesystem
 metadata and automatic recovery of interrupted requests are not provided.
+
+Core 0.2 sessions use SQLite transactions and standard rollback-journal recovery
+on reopen. This can recover uncommitted database writes; it does not recover an
+interrupted audio action. Session queries require a writable local workspace so
+SQLite can perform journal recovery if needed. Feedback source fields are caller
+attribution, not authenticated user identities or proof of listening.
