@@ -32,3 +32,9 @@ on reopen. This can recover uncommitted database writes; it does not recover an
 interrupted audio action. Session queries require a writable local workspace so
 SQLite can perform journal recovery if needed. Feedback source fields are caller
 attribution, not authenticated user identities or proof of listening.
+
+Core 0.3 adds explicit managed-job recovery after a worker exits, using local
+OS file locks and verified immutable results. Never remove worker lock files
+to bypass ownership. Cancellation is cooperative, not forced process-tree
+termination. Legacy direct action claims are not reclaimed. These guarantees
+do not extend to network filesystems, hostile clients or power-loss recovery.

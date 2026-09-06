@@ -10,6 +10,7 @@ from . import __version__
 from .artifacts import ArtifactStore, Publication
 from .contracts import ACTION_SCHEMA, fingerprint, object_schema, validate
 from .errors import AudioError
+from .execution import checkpoint
 from .media import (PROFILE, PCM, decode_wav, encode_wav, gain, gain_multiplier,
                     inspect, trim)
 
@@ -109,21 +110,25 @@ class ActionService:
         return {**body, "digest": fingerprint(body)}
 
     def execute(self, request: dict, *, expected_resolution_digest: str | None = None) -> dict:
+        checkpoint(force=True)
         resolution = self.resolve(request)
         if expected_resolution_digest is not None and resolution["digest"]["hex"] != expected_resolution_digest:
             raise AudioError("resolution_conflict", "Resolution changed since preview")
         operation = self.registry.get(request["operation"])
 
         def produce(publication: Publication):
+            checkpoint(force=True)
             record, data = self.store.asset(request["inputs"][0])
             if record["digest"] != resolution["inputs"][0]["digest"]:
                 raise AudioError("input_changed", "Resolved input changed before execution")
             pcm = decode_wav(data)
             output, observation = operation.execute(resolution["effective_parameters"], pcm)
+            checkpoint(force=True)
             if output is not None:
                 publication.add(encode_wav(output), output.facts(),
                                 parents=[{"role": "source", "asset_id": record["asset_id"], "digest": record["digest"]}],
                                 provenance={"operation": operation.name, "profile": operation.profile})
+            checkpoint(force=True)
             return {"resolution": resolution, "findings": [{"kind": "measurement", "method": operation.profile,
                                                             "source_asset_id": record["asset_id"], **observation}],
                     "limitations": ["Successful execution does not establish listening acceptance."]}

@@ -7,6 +7,7 @@ __pycache__/
 /dist/
 /.local/
 /workspaces/
+.job-locks/
 *.sqlite*
 *.db
 *.db-*

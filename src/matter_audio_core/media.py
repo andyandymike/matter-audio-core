@@ -13,6 +13,7 @@ from decimal import Decimal, ROUND_HALF_UP, localcontext
 
 from .contracts import digest
 from .errors import AudioError
+from .execution import checkpoint
 
 MAX_AUDIO_BYTES = 64 * 1024 * 1024
 PROFILE = "pcm16-transform-q24/v1"
@@ -100,7 +101,9 @@ def gain_multiplier(db: int | float) -> int:
 
 def gain(pcm: PCM, multiplier: int, clip: str = "reject") -> tuple[PCM, int]:
     output, clipped = array("h"), 0
-    for sample in pcm.samples():
+    for index, sample in enumerate(pcm.samples()):
+        if index % 8192 == 0:
+            checkpoint()
         product = sample * multiplier
         value = (abs(product) + Q24 // 2) // Q24
         if product < 0:
@@ -126,12 +129,18 @@ def inspect(pcm: PCM, *, window_frames: int | None = None, offset: int = 0, limi
     values = pcm.samples()
 
     def levels(part) -> dict:
-        peak = max(abs(v) for v in part)
-        rms = math.sqrt(sum(v * v for v in part) / len(part))
+        peak, squares, full_scale = 0, 0, 0
+        for index, value in enumerate(part):
+            if index % 8192 == 0:
+                checkpoint()
+            peak = max(peak, abs(value))
+            squares += value * value
+            full_scale += value in (-32768, 32767)
+        rms = math.sqrt(squares / len(part))
         return {"peak_pcm16": peak, "rms_pcm16": rms,
                 "peak_dbfs": 20 * math.log10(peak / 32768) if peak else None,
                 "rms_dbfs": 20 * math.log10(rms / 32768) if rms else None,
-                "full_scale_sample_count": sum(v in (-32768, 32767) for v in part)}
+                "full_scale_sample_count": full_scale}
 
     count = (pcm.frames + window_frames - 1) // window_frames
     windows = []

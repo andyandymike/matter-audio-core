@@ -52,5 +52,6 @@ def capabilities() -> dict:
             "storage": "sqlite/v1", "mutation_schemas": MUTATIONS,
             "queries": ["session list", "session show", "session request",
                         "feedback list", "context show"],
-            "limitations": ["Audio actions require explicit selection into a session.",
-                            "Region constraints and audio job recovery are not implemented."]}
+            "migration_command": "session migrate", "database_schema_version": 2,
+            "limitations": ["Direct audio actions require explicit selection into a session.",
+                            "Region constraints are not implemented."]}

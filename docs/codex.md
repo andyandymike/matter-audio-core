@@ -48,6 +48,11 @@ follow the skill's session reference for mutation schemas, revision guards and
 feedback attribution. Session state belongs to its configured product/workspace;
 switching launch targets does not transfer that state.
 
+Core 0.3 adds `jobs` capabilities and a managed-jobs Skill reference. Use explicit
+job recovery after interruption and retry only stopped failed items with a concrete
+reason. Existing 0.2 workspaces need `session migrate`; all clients sharing one
+workspace should use the same current core version.
+
 The skill returns verified playback paths and measured changes. Region locks
-and automatic audio job recovery are not implemented. Audio generation remains
-a separate product capability; installing the core does not enable it.
+and generic fades are not implemented. Audio generation remains a separate
+product capability; installing the core does not enable it.

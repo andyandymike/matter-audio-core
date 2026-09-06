@@ -14,6 +14,7 @@ from .artifacts import ArtifactStore
 from .contracts import read_json
 from .errors import AudioError
 from .session_contracts import capabilities as session_capabilities
+from .job_contracts import capabilities as job_capabilities
 
 
 class Parser(argparse.ArgumentParser):
@@ -54,6 +55,7 @@ def build_parser(product: str, *, allow_import: bool = True) -> Parser:
     for name in ("create", "select", "branch"):
         sessions.add_parser(name).add_argument("--request", type=Path, required=True)
     sessions.add_parser("request").add_argument("request_id")
+    sessions.add_parser("migrate")
     for name in ("show", "list"):
         querying = sessions.add_parser(name)
         if name == "show":
@@ -72,6 +74,24 @@ def build_parser(product: str, *, allow_import: bool = True) -> Parser:
     context_show.add_argument("session_id")
     context_show.add_argument("--history-limit", type=int, default=10)
     context_show.add_argument("--feedback-limit", type=int, default=20)
+    jobs = commands.add_parser("job").add_subparsers(dest="job_command", required=True)
+    for name in ("submit", "cancel", "retry"):
+        jobs.add_parser(name).add_argument("--request", type=Path, required=True)
+    for name in ("run", "recover", "show"):
+        querying = jobs.add_parser(name)
+        querying.add_argument("job_id")
+        if name == "show":
+            querying.add_argument("--offset", type=int, default=0)
+            querying.add_argument("--limit", type=int, default=50)
+    job_list = jobs.add_parser("list")
+    job_list.add_argument("--session", dest="session_id")
+    job_list.add_argument("--offset", type=int, default=0)
+    job_list.add_argument("--limit", type=int, default=50)
+    batch = commands.add_parser("batch").add_subparsers(dest="batch_command", required=True)
+    for name in ("submit", "retry"):
+        batch.add_parser(name).add_argument("--request", type=Path, required=True)
+    for name in ("run", "recover", "show"):
+        batch.add_parser(name).add_argument("batch_id")
     return parser
 
 
@@ -80,6 +100,8 @@ def session_command(args, store, registry):
     from .sessions import SessionService
     service = SessionService(store, registry)
     if args.command == "session":
+        if args.session_command == "migrate":
+            return service.migrate()
         if args.session_command in ("create", "select", "branch"):
             return service.mutate(args.session_command, read_json(args.request))
         if args.session_command == "request":
@@ -96,6 +118,22 @@ def session_command(args, store, registry):
 
 def emit(value: dict) -> None:
     print(json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(",", ":")))
+
+
+def job_command(args, store, registry):
+    from .jobs import JobService
+    service = JobService(store, registry)
+    if args.command == "batch":
+        if args.batch_command in ("submit", "retry"):
+            return service.mutate("batch_" + args.batch_command, read_json(args.request))
+        return getattr(service, "batch_" + args.batch_command)(args.batch_id)
+    if args.job_command in ("submit", "cancel", "retry"):
+        return service.mutate(args.job_command, read_json(args.request))
+    if args.job_command == "show":
+        return service.show(args.job_id, offset=args.offset, limit=args.limit)
+    if args.job_command == "list":
+        return service.list_jobs(session_id=args.session_id, offset=args.offset, limit=args.limit)
+    return getattr(service, args.job_command)(args.job_id)
 
 
 def run(argv: Sequence[str] | None = None, *, product: str = "matter-audio",
@@ -115,8 +153,9 @@ def run(argv: Sequence[str] | None = None, *, product: str = "matter-audio",
             result = {"schema": "matter-capabilities/v1", "product": product,
                       "core_version": __version__, "operations": registry.capabilities(),
                       "sessions": session_capabilities(),
+                      "jobs": job_capabilities(),
                       "transport": "cli-json/v1", "audio_model_calls": 0,
-                      "limitations": ["Fades, region locks, audio job recovery and model editing are not implemented."]}
+                      "limitations": ["Fades, region locks and model editing are not implemented."]}
             if capability_extra:
                 result["product_capabilities"] = capability_extra()
         else:
@@ -150,6 +189,8 @@ def run(argv: Sequence[str] | None = None, *, product: str = "matter-audio",
                                              expected_resolution_digest=args.expected_resolution_digest)
             elif args.command in ("session", "feedback", "context"):
                 result = session_command(args, store, registry)
+            elif args.command in ("job", "batch"):
+                result = job_command(args, store, registry)
             elif handle_extra:
                 result = handle_extra(args, store)
             else:
@@ -157,7 +198,7 @@ def run(argv: Sequence[str] | None = None, *, product: str = "matter-audio",
             if "outputs" in result:
                 result = {**result, "playback": store.playback_refs(result)}
         emit(result)
-        return 2 if result.get("status") == "failed" else 0
+        return 2 if result.get("status") in ("failed", "interrupted", "cancelled", "partial_failure") else 0
     except AudioError as exc:
         emit({"schema": "matter-error/v1", "status": "failed", "error": exc.document()})
         return 2

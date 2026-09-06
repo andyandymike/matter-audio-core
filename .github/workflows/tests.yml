@@ -64,6 +64,8 @@ jobs:
         run: python examples/quickstart.py
       - name: Session workflow across fresh CLI processes
         run: python examples/session_workflow.py
+      - name: Job crash recovery and partial batch retry
+        run: python examples/jobs_workflow.py
       - name: Console entry point
         run: matter-audio capabilities --json
       - name: Whitespace check

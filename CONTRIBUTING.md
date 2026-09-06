@@ -15,6 +15,7 @@ python -m pip install -e ".[dev]"
 python -m unittest discover -s tests -v
 python examples/quickstart.py
 python examples/session_workflow.py
+python examples/jobs_workflow.py
 python -m build
 python -m twine check --strict dist/*
 python tools/check_distribution.py dist
@@ -38,6 +39,8 @@ does not require sibling repositories or external audio.
 Session changes also need meaningful transaction, revision-conflict or restart
 coverage. Test feedback is synthetic; never present it as actual user listening
 evidence. Keep SQLite databases and journal files out of source and packages.
+Managed execution changes also need subprocess interruption/concurrency coverage;
+fault injection belongs in test/example helpers, never production CLI options.
 
 ## Changes to audio behavior
 

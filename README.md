@@ -14,10 +14,10 @@ ScoreMatter adapters. It does not require a GPU, model weights, API keys or an
 audio generation service. The optional [Codex integration](docs/codex.md) uses
 the standalone core or configured product CLIs.
 
-**Status:** `0.2.0`, early development. Windows and Linux, Python 3.10+ with
-standard-library SQLite support. Sessions now persist version selection,
-branching and attributed feedback. macOS publication, automatic audio job
-recovery and generative editing are not implemented.
+**Status:** `0.3.0`, early development. Windows and Linux, Python 3.10+ with
+standard-library SQLite support. Persistent sessions now include managed jobs,
+explicit crash recovery, partial batch retries and cooperative CPU cancellation.
+macOS publication and generative editing are not implemented.
 
 ## Quick start
 
@@ -120,6 +120,19 @@ binds attributed text to a revision. `context show <session-id>` retrieves the
 selected asset, history, relevant feedback and measurements. Audio actions
 produce candidates; selecting one is an explicit operation guarded by the
 expected revision. See [session requests and persistence](docs/sessions.md).
+
+## Recover jobs and retry a batch
+
+```sh
+python examples/jobs_workflow.py
+```
+
+This four-candidate example injects one failed write and one process exit, then
+recovers the published result and retries only the failed candidate. Successful
+items retain their original results. `job submit / run / show / recover / cancel / retry`
+and `batch submit / run / show / recover / retry` expose the same workflow.
+Existing 0.2 databases need `session migrate` before use with 0.3.
+See [job requests, cancellation and recovery](docs/jobs.md).
 
 See [architecture and roadmap](docs/architecture.md),
 [PCM16 processing rules](docs/pcm16-profile.md), and

@@ -9,7 +9,7 @@ from .artifacts import ArtifactStore, safe_path
 from .errors import AudioError
 
 DATABASE_NAME = "sessions.sqlite3"
-DATABASE_VERSION = 1
+DATABASE_VERSION = 2
 APPLICATION_ID = 0x4D415353
 
 # Execute individually: executescript() can implicitly commit pending work.
@@ -43,6 +43,35 @@ MIGRATIONS = {1: (
     """CREATE TABLE mutations (
         request_id TEXT PRIMARY KEY, binding_json TEXT NOT NULL,
         response_json TEXT NOT NULL, created_at TEXT NOT NULL
+    )""",
+), 2: (
+    """CREATE TABLE jobs (
+        job_id TEXT PRIMARY KEY, session_id TEXT NOT NULL, base_revision INTEGER NOT NULL,
+        spec_json TEXT NOT NULL, state TEXT NOT NULL, attempt INTEGER NOT NULL,
+        selection_json TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+        CHECK (state IN ('queued', 'running', 'cancel_requested', 'succeeded', 'failed', 'interrupted', 'cancelled')),
+        CHECK (attempt >= 1),
+        FOREIGN KEY (session_id, base_revision) REFERENCES revisions(session_id, revision),
+        FOREIGN KEY (job_id, attempt) REFERENCES job_attempts(job_id, attempt)
+            DEFERRABLE INITIALLY DEFERRED
+    )""",
+    """CREATE TABLE job_attempts (
+        job_id TEXT NOT NULL, attempt INTEGER NOT NULL, action_request_id TEXT NOT NULL UNIQUE,
+        resolution_json TEXT NOT NULL, state TEXT NOT NULL, result_json TEXT, error_json TEXT,
+        started_at TEXT, finished_at TEXT, PRIMARY KEY (job_id, attempt),
+        CHECK (state IN ('queued', 'running', 'cancel_requested', 'succeeded', 'failed', 'interrupted', 'cancelled')),
+        CHECK (attempt >= 1),
+        FOREIGN KEY (job_id) REFERENCES jobs(job_id)
+    )""",
+    "CREATE INDEX jobs_session ON jobs(session_id, job_id)",
+    """CREATE TABLE batches (
+        batch_id TEXT PRIMARY KEY, session_id TEXT NOT NULL, created_at TEXT NOT NULL,
+        FOREIGN KEY (session_id) REFERENCES sessions(session_id)
+    )""",
+    """CREATE TABLE batch_items (
+        batch_id TEXT NOT NULL, position INTEGER NOT NULL, job_id TEXT NOT NULL UNIQUE,
+        PRIMARY KEY (batch_id, position), FOREIGN KEY (batch_id) REFERENCES batches(batch_id),
+        FOREIGN KEY (job_id) REFERENCES jobs(job_id)
     )""",
 )}
 

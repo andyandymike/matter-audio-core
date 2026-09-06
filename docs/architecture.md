@@ -16,6 +16,8 @@ or recording pipelines.
 | `session_contracts` | Strict versioned session and feedback requests |
 | `session_db` | SQLite ownership, schema migrations and atomic transactions |
 | `sessions` | Version selection, branching, feedback and bounded resume context |
+| `job_contracts` / `jobs` | Frozen job requests, attempts, recovery, guarded selection and partial batches |
+| `execution` | Local worker locks and cooperative CPU checkpoints |
 
 An adapter can add an `Operation` to a `Registry` and pass it to `cli.run` or
 `ActionService`. It owns any decoding, rights registration or model dependency.
@@ -47,6 +49,7 @@ workspace/
   objects/<group-id>/  # Manifest, digest and complete output inventory
   requests/<id>/       # Immutable request claim
   .staging/            # Unpublished work owned by the store
+  .job-locks/          # Stable OS-lock files; never delete while clients may run
 ```
 
 Use a separate workspace for each product. Managed files are implementation
@@ -63,10 +66,16 @@ SQLite sessions, selection/history, branches, attributed feedback and context
 queries. Audio actions create candidates; an explicit, revision-guarded selection
 records the chosen output. See [persistent sessions](sessions.md).
 
+Core 0.3 adds managed jobs and batch items in SQLite schema 2. A worker holds a
+local OS lock across execution and result registration. Immutable audio publication
+precedes the short registration/selection transaction. Recovery verifies already
+published groups without rerunning the operation. Retries create separate attempts
+only after a worker has stopped. See [jobs and recovery](jobs.md).
+
 Remaining increments are:
 
-- Explicit recovery procedures for interrupted requests.
-- Protected PCM regions, candidate batches and a small listening interface.
+- Protected PCM regions, generic fades and product-specific candidate preparation.
+- A small listening interface and explicit selected-version export.
 - Optional model-based editing and additional host transports.
 
 These items are planned scope, not available commands or a release schedule.

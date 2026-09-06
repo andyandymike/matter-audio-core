@@ -1,6 +1,18 @@
 # Changelog
 
-## 0.2.0 — Unreleased
+## 0.3.0 — Unreleased
+
+- Managed local jobs with frozen resolutions, numbered attempts and explicit
+  recovery of published results without repeating audio execution.
+- Atomic batch submission and targeted failed-item retries; successful items
+  retain their original results.
+- Process-owned worker locks, acknowledged CPU cancellation and guarded selection
+  that preserves candidates when a newer session selection wins.
+- Explicit transactional migration from session database schema 1 to 2, job
+  context queries and reproducible subprocess crash/failure examples.
+- Legacy direct audio actions and PCM numeric profiles remain compatible.
+
+## 0.2.0 — 2026-09-06
 
 - Transactional SQLite sessions, version selection, history-preserving restores
   and independent branches from an explicit revision.

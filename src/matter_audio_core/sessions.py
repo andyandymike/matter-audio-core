@@ -11,7 +11,7 @@ from .artifacts import ArtifactStore
 from .contracts import canonical, parse_json, validate
 from .errors import AudioError
 from .session_contracts import IDENTIFIER, MUTATIONS, REVISION, page_parameters
-from .session_db import SessionDatabase
+from .session_db import DATABASE_VERSION, SessionDatabase
 
 
 def timestamp() -> str:
@@ -51,6 +51,12 @@ class SessionService:
     def __init__(self, store: ArtifactStore, registry: Registry | None = None):
         self.store, self.registry = store, registry or Registry()
         self.database = SessionDatabase(store)
+
+    def migrate(self):
+        with self.database.transaction(write=True):
+            pass
+        return {"schema": "matter-session-migration/v1", "status": "succeeded",
+                "database_version": DATABASE_VERSION}
 
     @staticmethod
     def _session(connection, session_id):
@@ -245,6 +251,8 @@ class SessionService:
         # Selection and feedback are from one SQLite read snapshot. Audio is immutable.
         with self.database.transaction() as connection:
             state = self._show(connection, session_id, 0, history_limit)
+            from .jobs import session_jobs
+            jobs = session_jobs(connection, session_id)
             feedback = self._feedback_list(connection, session_id, None, 0, feedback_limit)
             asset = state["current"]["selected_asset"]
             relevant = {"feedback": [], "next_offset": None} if asset is None else self._feedback_list(
@@ -264,6 +272,6 @@ class SessionService:
                 "measurements": measurements, "measurement_method": "pcm16-levels/v1",
                 "capabilities": self.registry.capabilities(), "playback": playback, "audio_model_calls": 0,
                 "constraints": {"availability": "not_implemented"},
-                "jobs": {"availability": "not_tracked", "query": "action show <request-id>"},
+                "jobs": jobs,
                 "limitations": ["Feedback is attributed to its recorded source; it is not verified listening acceptance.",
-                                "Session selection is explicit; audio actions do not update it automatically."]}
+                                "Direct actions do not select outputs; managed jobs may request guarded selection."]}

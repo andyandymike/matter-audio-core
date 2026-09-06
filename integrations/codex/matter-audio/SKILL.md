@@ -58,5 +58,9 @@ hypotheses. User observations and measurements are separate evidence. Never
 invent a listening verdict. A local candidate and an imported asset do not by
 themselves establish acceptance or consumer distribution rights.
 
-PCM region locks, generic fades and automatic audio job recovery remain future
-work. Session persistence does not imply that those operations are available.
+For interrupted work or batches, check `capabilities.jobs` and read
+[managed jobs](references/jobs.md). Core 0.3 adds explicit recovery, independently
+retried batch items and cooperative CPU cancellation. Prefer managed jobs when
+the task needs these guarantees; direct audio actions keep their legacy behavior.
+
+PCM region locks and generic fades remain future work.

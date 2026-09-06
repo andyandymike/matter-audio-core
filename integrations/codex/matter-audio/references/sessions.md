@@ -75,4 +75,5 @@ On a timeout, query the correct namespace before retrying.
 Use `session list`, `session show`, and `feedback list` with `--offset` and
 `--limit` for additional pages. Feedback can also be filtered by `--revision`.
 The store is project-local SQLite; it does not depend on chat history or Codex
-global memory. Region constraints and audio job recovery are not implemented.
+global memory. Region constraints are not implemented. Core 0.3 adds explicit
+[managed job recovery](jobs.md); direct legacy actions keep their prior behavior.

@@ -12,7 +12,7 @@ from pathlib import Path, PurePosixPath
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PRIVATE_PARTS = {".local", ".venv", "venv", "spec", "planning-private", "workspaces", "__pycache__"}
+PRIVATE_PARTS = {".local", ".venv", "venv", "spec", "planning-private", "workspaces", "__pycache__", ".job-locks"}
 PRIVATE_SUFFIXES = {".wav", ".ogg", ".mp3", ".flac", ".aif", ".aiff", ".m4a", ".mp4",
                     ".bin", ".pyc", ".pyo", ".pem", ".key", ".safetensors", ".ckpt", ".pt", ".pth"}
 
@@ -78,6 +78,8 @@ def main() -> None:
                     "integrations/codex/matter-audio/config.example.json",
                     "integrations/codex/matter-audio/scripts/run_audio.py", "tools/check_distribution.py"}
         required.add("integrations/codex/matter-audio/references/sessions.md")
+        required.update({"docs/jobs.md", "examples/jobs_workflow.py", "tests/test_jobs.py", "tests/job_worker.py",
+                         "integrations/codex/matter-audio/references/jobs.md"})
         require(required <= relative, f"Missing sdist files: {sorted(required - relative)}")
         for name, data in {"LICENSE": license_bytes, **{"src/" + k: v for k, v in modules.items()}}.items():
             member = source.extractfile(f"{prefix}/{name}")

@@ -148,8 +148,8 @@ recent session feedback; `current_feedback` retrieves feedback on the currently
 selected asset even if that feedback belongs to an older revision restored
 later. Each item keeps its exact revision and attribution. Measurements remain
 separate from feedback. Additional pages are available through the query CLI.
-Region constraints and managed audio jobs explicitly report unavailable rather
-than returning an apparently successful empty state.
+Region constraints explicitly report unavailable. Core 0.3 adds managed jobs to
+resume context, with unfinished jobs first and a continuation query. See [jobs](jobs.md).
 
 ## Persistence and retries
 
@@ -176,7 +176,9 @@ After a timeout, use `session request` for state mutations and `action show` for
 audio actions. Use `context show` to learn the current state, since a replayed
 receipt describes the original mutation, not the current head.
 
-This is the first M2 increment. Audio job registration/recovery, PCM region
-locks, fades, batch management, a comparison UI and selected-version export
-are separate later work. SQLite transaction rollback does not recover an
-unfinished audio action or establish full power-loss durability.
+The original session capability was the first M2 increment. Core 0.3 adds job
+registration/recovery and batch management through an explicit schema-2 migration;
+run `session migrate` on an existing 0.2 database before using the new core.
+PCM region locks, fades, a comparison UI and selected-version export remain later
+work. SQLite transaction rollback alone does not recover an unfinished audio
+action or establish full power-loss durability.
