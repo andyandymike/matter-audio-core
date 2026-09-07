@@ -44,6 +44,22 @@ def build_parser(product: str, *, allow_import: bool = True) -> Parser:
     inspecting.add_argument("--window-frames", type=int)
     inspecting.add_argument("--offset", type=int, default=0)
     inspecting.add_argument("--limit", type=int, default=128)
+    commands.add_parser("analyze").add_argument("asset_id")
+    library = commands.add_parser("library").add_subparsers(dest="library_command", required=True)
+    for name in ("create", "search"):
+        library.add_parser(name).add_argument("--request", type=Path, required=True)
+    library.add_parser("show").add_argument("library_id")
+    libraries = library.add_parser("list")
+    libraries.add_argument("--offset", type=int, default=0)
+    libraries.add_argument("--limit", type=int, default=20)
+    cue_sets = commands.add_parser("cue-set").add_subparsers(dest="cue_command", required=True)
+    for name in ("create", "export"):
+        cue_sets.add_parser(name).add_argument("--request", type=Path, required=True)
+    cue_sets.add_parser("show").add_argument("set_id")
+    cue_sets.add_parser("export-show").add_argument("request_id")
+    sets = cue_sets.add_parser("list")
+    sets.add_argument("--offset", type=int, default=0)
+    sets.add_argument("--limit", type=int, default=20)
     action = commands.add_parser("action").add_subparsers(dest="action_command", required=True)
     for name in ("resolve", "execute"):
         operation = action.add_parser(name)
@@ -175,6 +191,8 @@ def run(argv: Sequence[str] | None = None, *, product: str = "matter-audio",
         if args.command == "capabilities":
             from .audition import AUDITION_SCHEMA
             from .delivery import EXPORT_SCHEMA
+            from .cue_sets import SET_SCHEMA, DELIVERY_SCHEMA
+            from .library import LIBRARY_SCHEMA, SEARCH_SCHEMA
             result = {"schema": "matter-capabilities/v1", "product": product,
                       "core_version": __version__, "operations": registry.capabilities(),
                       "sessions": session_capabilities(),
@@ -182,6 +200,8 @@ def run(argv: Sequence[str] | None = None, *, product: str = "matter-audio",
                       "transport": "cli-json/v1", "audio_model_calls": 0,
                       "audition": {"availability": "available", "create_schema": AUDITION_SCHEMA, "transport": "loopback-http/v1"},
                       "export": {"availability": "available", "create_schema": EXPORT_SCHEMA},
+                      "cue_sets": {"availability": "available", "create_schema": SET_SCHEMA, "export_schema": DELIVERY_SCHEMA},
+                      "library": {"availability": "available", "create_schema": LIBRARY_SCHEMA, "search_schema": SEARCH_SCHEMA},
                       "limitations": ["Model editing requires an explicitly configured product backend."]}
             if capability_extra:
                 result["product_capabilities"] = capability_extra()
@@ -201,6 +221,32 @@ def run(argv: Sequence[str] | None = None, *, product: str = "matter-audio",
                     if not 0 <= args.offset or not 1 <= args.limit <= 100:
                         raise AudioError("invalid_arguments", "Asset offset >= 0; limit 1..100")
                     result = store.list_assets(offset=args.offset, limit=args.limit)
+            elif args.command == "analyze":
+                from .analysis import describe
+                from .media import decode_wav
+                record, data = store.asset(args.asset_id)
+                result = {"schema": "matter-analysis/v1", "status": "succeeded", "asset_id": record["asset_id"],
+                          "digest": record["digest"], "analysis": describe(decode_wav(data)), "audio_model_calls": 0}
+            elif args.command == "library":
+                from .library import LibraryService
+                library_service = LibraryService(store)
+                if args.library_command in ("create", "search"):
+                    result = getattr(library_service, args.library_command)(read_json(args.request))
+                elif args.library_command == "list":
+                    result = library_service.documents.list(offset=args.offset, limit=args.limit)
+                else:
+                    result = library_service.show(args.library_id)
+            elif args.command == "cue-set":
+                from .cue_sets import CueSetService
+                cue_service = CueSetService(store)
+                if args.cue_command in ("create", "export"):
+                    result = getattr(cue_service, args.cue_command)(read_json(args.request))
+                elif args.cue_command == "list":
+                    result = cue_service.documents.list(offset=args.offset, limit=args.limit)
+                elif args.cue_command == "export-show":
+                    result = cue_service.export_show(args.request_id)
+                else:
+                    result = cue_service.show(args.set_id)
             elif args.command == "inspect":
                 params = {"offset": args.offset, "limit": args.limit}
                 if args.window_frames is not None:

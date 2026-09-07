@@ -245,7 +245,8 @@ class CliTests(unittest.TestCase):
             self.assertEqual(code, 0)
             self.assertFalse(workspace.exists())
             self.assertEqual({op["operation"] for op in value["operations"]},
-                             {"inspect/v1", "gain/v1", "trim/v1", "fade/v1", "mix/v1", "splice/v1"})
+                             {"inspect/v1", "gain/v1", "trim/v1", "fade/v1", "mix/v1", "splice/v1",
+                              "analyze/v1", "normalize/v1", "loop/v1", "scene/v1"})
         self.assertFalse({"torch", "numpy", "miniaudio", "score_matter"} & (set(sys.modules) - before))
 
     def test_invalid_cli_is_machine_readable(self):

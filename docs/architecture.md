@@ -1,5 +1,12 @@
 # Architecture and roadmap
 
+Core 0.6 adds `analysis.py` for measured descriptors, `arrangement.py` for
+normalization/loops/event timelines, and `documents.py` for immutable complete
+workspace documents. `cue_sets.py` binds cue variants and package deliveries;
+`library.py` binds explicit metadata to measured asset snapshots. These services
+reuse asset integrity/publication and do not change SQLite schema 4. See
+[production authoring](production.md) for limits and numerical profiles.
+
 The core turns explicit local audio requests into verified, immutable results.
 It is independent of the host language model and of product-specific generation
 or recording pipelines.

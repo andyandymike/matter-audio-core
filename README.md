@@ -14,13 +14,18 @@ ScoreMatter adapters. It does not require a GPU, model weights, API keys or an
 audio generation service. The optional [Codex integration](docs/codex.md) uses
 the standalone core or configured product CLIs.
 
-**Status:** `0.5.0`, early development. Windows and Linux, Python 3.10+ with
+**Status:** `0.6.0`, early development. Windows and Linux, Python 3.10+ with
 standard-library SQLite support. Persistent sessions now include managed jobs,
 explicit crash recovery, partial batch retries and cooperative CPU cancellation.
 PCM region locks preserve exact samples through continuous edits. A local
 comparison page records selection/feedback and exports the exact saved WAV.
 Optional product model adapters use owned process trees and durable attempt
 records; models are not bundled. macOS publication remains unsupported.
+
+Core 0.6 adds [cue packages, loops, scene timelines and local search](docs/production.md):
+versioned cue/variant sets, exact batch delivery, RMS/peak matching, overlap-loop
+construction, repeatable scene events and a local measured-feature index. Run
+`python examples/production_workflow.py` for the complete zero-model workflow.
 
 See [comparison and export](docs/audition.md), [layering and replacement](docs/composition.md)
 and [local model adapters](docs/model-adapters.md). Run

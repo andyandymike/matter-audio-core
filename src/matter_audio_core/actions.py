@@ -97,6 +97,7 @@ def _trim_mapping(parameters, pcm):
 
 def builtin_operations() -> list[Operation]:
     from .composition import composition_operations
+    from .arrangement import arrangement_operations
     integer = {"type": "integer", "minimum": 0, "maximum": 230400000}
     seconds = {"type": "number", "minimum": 0, "maximum": 86400}
     return [
@@ -125,7 +126,7 @@ def builtin_operations() -> list[Operation]:
             mapping=_trim_mapping, writes=lambda p, pcm: []),
         Operation("fade/v1", FADE_SCHEMA, resolve_fade, fade, FADE_PROFILE,
                   mapping=identity_mapping, writes=fade_writes),
-    ] + composition_operations()
+    ] + composition_operations() + arrangement_operations()
 
 
 class ActionService:

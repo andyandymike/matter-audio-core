@@ -1,6 +1,6 @@
 ---
 name: matter-audio
-description: Use Matter Audio Core, SonicMatter or ScoreMatter for local audio editing, layering, bounded splices, PCM protection, comparison, feedback and export. Use registered recordings through SonicMatter and explicitly configured local SA3 edits through ScoreMatter. Game integration is separate.
+description: Use Matter Audio Core, SonicMatter or ScoreMatter for local audio editing, loops, scene timelines, cue sets, measured search, PCM protection, comparison and export. Use registered recordings through SonicMatter and configured local SA3 edits through ScoreMatter. Game integration is separate.
 ---
 
 # Matter audio authoring
@@ -78,3 +78,10 @@ check its configured availability and the user's scope before executing. Report
 actual launches, cancellation/failure, timing and any uncertainty from job evidence.
 Do not equate model-mask preservation with exact final PCM, silently install
 weights, call a paid API or manufacture a listening verdict.
+
+Core 0.6 adds cue/variant packages, overlap loops, finite scene timelines, RMS
+matching and local feature search. Read [production authoring](references/production.md).
+Use explicit existing assets and recipes; confirm actual operation schemas from
+the configured product. Text tags are authored metadata, numeric distance is not
+semantic understanding, and measured seam quality does not establish listening
+acceptance. Keep source eligibility and saved selection references in deliveries.

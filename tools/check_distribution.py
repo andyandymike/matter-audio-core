@@ -88,6 +88,9 @@ def main() -> None:
                          "examples/composition_workflow.py", "tests/test_audition.py", "tests/test_composition.py",
                          "tests/test_processes.py", "tests/test_web.cjs", "tests/process_fixture.py", "tests/process_host.py",
                          "integrations/codex/matter-audio/references/comparison-and-layers.md"})
+        required.update({"docs/production.md", "examples/production_workflow.py",
+                         "tests/test_arrangement.py", "tests/test_collections.py",
+                         "integrations/codex/matter-audio/references/production.md"})
         require(required <= relative, f"Missing sdist files: {sorted(required - relative)}")
         for name, data in {"LICENSE": license_bytes, **{"src/" + k: v for k, v in {**modules, **resources}.items()}}.items():
             member = source.extractfile(f"{prefix}/{name}")

@@ -62,6 +62,14 @@ A configured matrix is not itself evidence that every run passed.
 
 ## Product checks
 
+Core 0.6 adds `test_arrangement.py` for FFT/anti-phase stereo, silence, bounded
+normalization, loop rotation, clipping, PCM lock mapping and event timelines.
+`test_collections.py` checks saved selections, loop metadata, immutable set
+revisions, concurrent publication, exact batch delivery, corruption and local
+search filters/ranking. `examples/production_workflow.py` exercises all four
+feature groups through fresh installed CLI processes. These checks use no model
+and make no listening, semantic retrieval or game-runtime claim.
+
 `tools/verify_consumers.py --help` describes an optional integration probe for
 compatible ScoreMatter and SonicMatter checkouts. Supply each product root and
 interpreter, an existing BGM WAV longer than one second, and an output directory.

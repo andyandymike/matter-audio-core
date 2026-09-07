@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.0 — 2026-09-07
+
+- Immutable cue/variant sets with revision-bound selections, sidecar loop metadata
+  and atomic batch export of exact source WAV bytes.
+- `normalize/v1` for bounded RMS/peak gain and `loop/v1` for explicit overlap
+  construction, period accounting, region protection and seam measurements.
+- `scene/v1` for finite event timelines, repeated clips, track/event fades and
+  gains, single-round Q72 mixing and explicit overflow handling.
+- `analyze/v1` and a local metadata/feature library with transparent numeric
+  similarity contributions. No additional audio model or dependency.
+- A production workflow example and numerical, snapshot, concurrency and
+  delivery tests. SQLite remains at schema 4.
+
 ## 0.5.0 — 2026-09-07
 
 - Persistent comparison sets and a loopback browser page for frame-range playback,
