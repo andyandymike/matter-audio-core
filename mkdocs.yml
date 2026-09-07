@@ -1,0 +1,92 @@
+site_name: Matter Audio Core
+site_description: Local audio editing, protected PCM and repeatable authoring workflows.
+site_author: Matter Audio contributors
+site_url: https://andyandymike.github.io/matter-audio-core/
+site_dir: .local/docs-site
+repo_url: https://github.com/andyandymike/matter-audio-core
+repo_name: andyandymike/matter-audio-core
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: en
+  logo: assets/brand/matter-audio-mark.svg
+  favicon: assets/brand/matter-audio-mark.svg
+  font: false
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - content.action.edit
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Use dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Use light mode
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Workflows:
+      - Sessions and feedback: sessions.md
+      - Jobs and recovery: jobs.md
+      - Protected regions: regions.md
+      - Layering and replacement: composition.md
+      - Comparison and export: audition.md
+      - Loops, scenes and cue packages: production.md
+  - Integrations:
+      - Codex: codex.md
+      - SonicMatter and ScoreMatter: products.md
+      - Local model adapters: model-adapters.md
+  - Reference:
+      - Architecture: architecture.md
+      - PCM16 profile: pcm16-profile.md
+      - Validation: validation.md
+  - Maintainers:
+      - GitHub governance: maintainer/github-governance.md
+  - 简体中文: zh.md
+
+plugins:
+  - search:
+      lang: [en, zh]
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/andyandymike/matter-audio-core
+      name: Matter Audio Core on GitHub
+
+copyright: Copyright &copy; 2026 Matter Audio contributors

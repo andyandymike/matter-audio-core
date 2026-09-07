@@ -68,7 +68,7 @@ Use a separate workspace for each product. Managed files are implementation
 data; access them through the API/CLI and use returned playback paths for
 listening. The storage format is early-stage and is not a general-purpose media
 database or a security boundary. See [processing rules](pcm16-profile.md) and
-[security assumptions](../SECURITY.md).
+[security assumptions](https://github.com/andyandymike/matter-audio-core/blob/main/SECURITY.md).
 
 ## Roadmap
 

@@ -42,6 +42,23 @@ evidence. Keep SQLite databases and journal files out of source and packages.
 Managed execution changes also need subprocess interruption/concurrency coverage;
 fault injection belongs in test/example helpers, never production CLI options.
 
+## Documentation changes
+
+The documentation site uses Material for MkDocs, with its source in `docs/`.
+Build it in your activated environment:
+
+```sh
+python -m pip install -r requirements-docs.txt
+python -m mkdocs build --strict
+python -m mkdocs serve --dev-addr 127.0.0.1:8000
+```
+
+Generated pages stay in ignored `.local/docs-site/`. Check links and the affected
+page at desktop and narrow widths. Pull requests require **Release Gate** and
+**Docs build**; only `main` deploys to Pages. See the
+[repository governance guide](docs/maintainer/github-governance.md) for branch
+rules, including the repository administrator's direct-push exception.
+
 ## Changes to audio behavior
 
 Prefer small synthetic PCM fixtures with exact expected samples. Cover the

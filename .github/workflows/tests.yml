@@ -78,3 +78,20 @@ jobs:
         run: matter-audio capabilities --json
       - name: Whitespace check
         run: git diff --check
+
+  release-gate:
+    name: Release Gate
+    if: ${{ always() }}
+    needs: core
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require every platform and Python version
+        shell: bash
+        env:
+          CORE_RESULT: ${{ needs.core.result }}
+        run: |
+          printf '%s\n' "Core test matrix=$CORE_RESULT"
+          if [ "$CORE_RESULT" != "success" ]; then
+            exit 1
+          fi

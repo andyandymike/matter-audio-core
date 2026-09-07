@@ -3,10 +3,18 @@ updates:
   - package-ecosystem: pip
     directory: /
     schedule:
-      interval: monthly
+      interval: weekly
+      day: monday
+      time: "03:15"
+      timezone: Asia/Tokyo
     open-pull-requests-limit: 5
+    labels: [dependencies]
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: monthly
+      interval: weekly
+      day: monday
+      time: "03:00"
+      timezone: Asia/Tokyo
     open-pull-requests-limit: 5
+    labels: [dependencies, ci]

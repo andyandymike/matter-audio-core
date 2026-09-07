@@ -1,5 +1,7 @@
 # Matter Audio Core
 
+[文档站](https://andyandymike.github.io/matter-audio-core/) · [中文概览](https://andyandymike.github.io/matter-audio-core/zh/)
+
 [English](README.md)
 
 供工具和编程代理使用的本地音频制作核心：导入 WAV、检查电平、调整增益、

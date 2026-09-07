@@ -5,7 +5,7 @@ this package in the workspace environment, ask Codex to run
 `python -m matter_audio_core capabilities --json`, then use an explicit audio
 workspace to import and transform a user-selected WAV.
 
-The bundled [matter-audio skill](../integrations/codex/matter-audio/SKILL.md)
+The bundled [matter-audio skill](https://github.com/andyandymike/matter-audio-core/blob/main/integrations/codex/matter-audio/SKILL.md)
 provides a launcher for the standalone core and compatible SonicMatter and
 ScoreMatter checkouts. It forwards structured CLI arguments; it does not contain either
 product, a model runtime or an audio service connection.

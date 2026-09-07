@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img">
+  <title>Matter Audio Core mark</title>
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="#102138"/>
+  <rect x="2.75" y="2.75" width="58.5" height="58.5" rx="15.25" fill="none" stroke="#fff" stroke-opacity=".14" stroke-width="1.5"/>
+  <path d="M19 18h-6v28h6m26-28h6v28h-6" fill="none" stroke="#82def0" stroke-width="3" stroke-linecap="round"/>
+  <path d="M24 26v12m8-20v28m8-23v18" fill="none" stroke="#b5a3ff" stroke-width="4" stroke-linecap="round"/>
+</svg>

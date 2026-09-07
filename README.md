@@ -1,9 +1,12 @@
 # Matter Audio Core
 
 [![Tests](https://github.com/andyandymike/matter-audio-core/actions/workflows/tests.yml/badge.svg)](https://github.com/andyandymike/matter-audio-core/actions/workflows/tests.yml)
+[![Docs](https://github.com/andyandymike/matter-audio-core/actions/workflows/docs.yml/badge.svg)](https://andyandymike.github.io/matter-audio-core/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 [简体中文](README.zh-CN.md)
+
+[Documentation](https://andyandymike.github.io/matter-audio-core/) · [Getting started](https://andyandymike.github.io/matter-audio-core/getting-started/)
 
 Local audio authoring primitives for tools and coding agents: import a WAV,
 inspect its levels, apply gain/fades, layer or splice audio, and keep a verifiable

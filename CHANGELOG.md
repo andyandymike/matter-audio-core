@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Public GitHub Pages documentation with a getting-started guide, product
+  integration notes, Chinese overview and light/dark responsive navigation.
+- Documentation CI, an aggregate release check, CODEOWNERS and documented
+  repository rules that preserve administrator direct pushes to `main`.
+
 ## 0.6.0 — 2026-09-07
 
 - Immutable cue/variant sets with revision-bound selections, sidecar loop metadata
