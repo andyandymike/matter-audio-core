@@ -23,7 +23,7 @@ classifiers = [
 dependencies = ["jsonschema==4.26.0", "rfc8785==0.1.4"]
 
 [project.optional-dependencies]
-dev = ["build>=1.2.2,<2", "twine>=6.1,<7"]
+dev = ["build>=1.2.2,<2", "twine>=6.1,<8"]
 
 [project.urls]
 Homepage = "https://github.com/andyandymike/matter-audio-core"
