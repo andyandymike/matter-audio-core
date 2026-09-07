@@ -37,7 +37,7 @@ def main():
                                    cwd=root, env=environment, timeout=args.timeout)
         return completed.returncode
     except subprocess.TimeoutExpired:
-        error = {"code": "host_timeout", "message": "Execution timed out; query the same ID with action show or session request before retrying."}
+        error = {"code": "host_timeout", "message": "Host timeout does not confirm backend cancellation. Query the same job with job show and request job cancel if needed; for direct actions use action show. Do not start another attempt blindly."}
     except (OSError, ValueError, KeyError) as exc:
         error = {"code": "host_configuration_error", "message": str(exc)}
     print(json.dumps({"schema": "matter-error/v1", "status": "failed", "error": error}, ensure_ascii=False))

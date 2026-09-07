@@ -58,7 +58,7 @@ def main():
     assert caps["score"]["core_version"] == caps["sonic"]["core_version"]
     # Compare the installed modules, not just the reported package version.
     inventories = {}
-    probe = "import json,hashlib,pathlib,matter_audio_core; p=pathlib.Path(matter_audio_core.__file__).parent; print(json.dumps({f.name:hashlib.sha256(f.read_bytes()).hexdigest() for f in p.glob('*.py')},sort_keys=True))"
+    probe = "import json,hashlib,pathlib,matter_audio_core; p=pathlib.Path(matter_audio_core.__file__).parent; print(json.dumps({f.relative_to(p).as_posix():hashlib.sha256(f.read_bytes()).hexdigest() for f in p.rglob('*') if f.is_file() and f.suffix in ('.py','.html','.css','.js')},sort_keys=True))"
     for product in ("score", "sonic"):
         completed = subprocess.run([str(getattr(args, f"{product}_python")), "-c", probe],
                                    env=environment, capture_output=True, text=True, check=True)

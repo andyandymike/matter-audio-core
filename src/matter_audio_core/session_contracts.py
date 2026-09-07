@@ -59,7 +59,7 @@ def capabilities() -> dict:
             "storage": "sqlite/v1", "mutation_schemas": MUTATIONS,
             "queries": ["session list", "session show", "session request",
                         "feedback list", "context show", "constraints show"],
-            "migration_command": "session migrate", "database_schema_version": 3,
+            "migration_command": "session migrate", "database_schema_version": 4,
             "pcm_region_protection": {"availability": "available", "schema": "matter-pcm-constraints/v1",
                                       "max_regions": 16, "mapping_kinds": ["identity", "slice"],
                                       "verification": "pcm-region-sha256/v1"},

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Callable
 
@@ -13,7 +13,7 @@ from .errors import AudioError
 from .execution import checkpoint
 from .fades import FADE_PROFILE, FADE_SCHEMA, fade, fade_writes, identity_mapping, resolve_fade
 from .regions import check_plan, verify_regions
-from .media import (PROFILE, PCM, decode_wav, encode_wav, gain, gain_multiplier,
+from .media import (MAX_AUDIO_BYTES, PROFILE, PCM, decode_wav, encode_wav, gain, gain_multiplier,
                     inspect, trim, Q24)
 
 
@@ -26,6 +26,23 @@ class Operation:
     profile: str = PROFILE
     mapping: Callable[[dict, PCM], dict] | None = None
     writes: Callable[[dict, PCM], list] | None = None
+    input_count: tuple[int, int] = (1, 1)
+    realization: str = "deterministic"
+    availability: str = "available"
+
+
+@dataclass(frozen=True)
+class AudioAttachment:
+    pcm: PCM
+    role: str
+    provenance: dict = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class OperationOutput:
+    pcm: PCM | None
+    observation: dict
+    attachments: tuple[AudioAttachment, ...] = ()
 
 
 class Registry:
@@ -46,8 +63,9 @@ class Registry:
 
     def capabilities(self) -> list[dict]:
         return [{"operation": op.name, "profile": op.profile,
-                 "parameters_schema": op.parameters_schema, "availability": "available",
-                 "realization": "deterministic", "verification": "exact_pcm_and_measurements",
+                 "parameters_schema": op.parameters_schema, "availability": op.availability,
+                 "realization": op.realization, "verification": "exact_pcm_and_measurements",
+                 "input_count": {"minimum": op.input_count[0], "maximum": op.input_count[1]},
                  "pcm_region_protection": "supported" if op.mapping and op.writes else "unavailable",
                  "evidence": {"kind": "implementation", "core_version": __version__,
                               "scope": "Local execution evidence is stored per result; no quality claim."}}
@@ -78,6 +96,7 @@ def _trim_mapping(parameters, pcm):
 
 
 def builtin_operations() -> list[Operation]:
+    from .composition import composition_operations
     integer = {"type": "integer", "minimum": 0, "maximum": 230400000}
     seconds = {"type": "number", "minimum": 0, "maximum": 86400}
     return [
@@ -106,29 +125,44 @@ def builtin_operations() -> list[Operation]:
             mapping=_trim_mapping, writes=lambda p, pcm: []),
         Operation("fade/v1", FADE_SCHEMA, resolve_fade, fade, FADE_PROFILE,
                   mapping=identity_mapping, writes=fade_writes),
-    ]
+    ] + composition_operations()
 
 
 class ActionService:
     def __init__(self, store: ArtifactStore, registry: Registry | None = None):
         self.store, self.registry = store, registry or Registry()
 
+    def _inputs(self, request, operation):
+        if not operation.input_count[0] <= len(request["inputs"]) <= operation.input_count[1]:
+            raise AudioError("invalid_request", f"{operation.name} expects {operation.input_count} inputs")
+        records, pcms, total = [], [], 0
+        for asset_id in request["inputs"]:
+            checkpoint()
+            record, data = self.store.asset(asset_id)
+            total += len(data)
+            if total > MAX_AUDIO_BYTES:
+                raise AudioError("input_limit", "Combined input WAV data exceeds 64 MiB")
+            records.append(record)
+            pcms.append(decode_wav(data))
+        return records, pcms[0] if operation.input_count == (1, 1) else pcms
+
     def resolve(self, request: dict) -> dict:
         validate(request, ACTION_SCHEMA)
         operation = self.registry.get(request["operation"])
         validate(request["parameters"], operation.parameters_schema)
-        record, data = self.store.asset(request["inputs"][0])
-        pcm = decode_wav(data)
+        records, audio = self._inputs(request, operation)
+        record = records[0]
+        pcm = audio[0] if isinstance(audio, list) else audio
         body = {"schema": "matter-resolution/v1", "request": request,
-                "inputs": [{"asset_id": record["asset_id"], "digest": record["digest"]}],
-                "profile": operation.profile, "effective_parameters": operation.resolve(request["parameters"], pcm),
+                "inputs": [{"asset_id": item["asset_id"], "digest": item["digest"]} for item in records],
+                "profile": operation.profile, "effective_parameters": operation.resolve(request["parameters"], audio),
                 "audio_model_calls": 0, "unverified_goals": []}
         if "protection" in request:
             from .sessions import SessionService
             protection = SessionService(self.store, self.registry).protection(request["protection"], record["asset_id"])
             parameters = body["effective_parameters"]
-            mapping = operation.mapping(parameters, pcm) if operation.mapping else None
-            writes = operation.writes(parameters, pcm) if operation.writes else None
+            mapping = operation.mapping(parameters, audio) if operation.mapping else None
+            writes = operation.writes(parameters, audio) if operation.writes else None
             protection["output_regions"] = check_plan(protection["input_regions"], mapping, writes, pcm.frames)
             protection["time_mapping"] = mapping
             protection["write_ranges"] = writes
@@ -144,11 +178,14 @@ class ActionService:
 
         def produce(publication: Publication):
             checkpoint(force=True)
-            record, data = self.store.asset(request["inputs"][0])
-            if record["digest"] != resolution["inputs"][0]["digest"]:
+            records, audio = self._inputs(request, operation)
+            record = records[0]
+            if [{"asset_id": item["asset_id"], "digest": item["digest"]} for item in records] != resolution["inputs"]:
                 raise AudioError("input_changed", "Resolved input changed before execution")
-            pcm = decode_wav(data)
-            output, observation = operation.execute(resolution["effective_parameters"], pcm)
+            pcm = audio[0] if isinstance(audio, list) else audio
+            executed = operation.execute(resolution["effective_parameters"], audio)
+            attachments = executed.attachments if isinstance(executed, OperationOutput) else ()
+            output, observation = (executed.pcm, executed.observation) if isinstance(executed, OperationOutput) else executed
             checkpoint(force=True)
             if "protection" in resolution:
                 from .sessions import SessionService
@@ -171,8 +208,13 @@ class ActionService:
                     "regions": bound["output_regions"] if output is not None else bound["input_regions"]}}
             if output is not None:
                 publication.add(encode_wav(output), output.facts(),
-                                parents=[{"role": "source", "asset_id": record["asset_id"], "digest": record["digest"]}],
+                                parents=[{"role": "source" if i == 0 else "layer", "asset_id": item["asset_id"], "digest": item["digest"]}
+                                         for i, item in enumerate(records)],
                                 provenance={"operation": operation.name, "profile": operation.profile})
+            for attachment in attachments:
+                publication.add(encode_wav(attachment.pcm), attachment.pcm.facts(), role=attachment.role,
+                    parents=[{"role": "context", "asset_id": item["asset_id"], "digest": item["digest"]} for item in records],
+                    provenance={"operation": operation.name, "profile": operation.profile, **attachment.provenance})
             checkpoint(force=True)
             return {"resolution": resolution, "findings": [{"kind": "measurement", "method": operation.profile,
                                                             "source_asset_id": record["asset_id"], **observation}],

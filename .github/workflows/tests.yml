@@ -60,6 +60,8 @@ jobs:
         run: python -m pip check
       - name: Unit tests against installed package
         run: python -m unittest discover -s tests -v
+      - name: Comparison controller tests without an audio device
+        run: node tests/test_web.cjs
       - name: CLI example
         run: python examples/quickstart.py
       - name: Session workflow across fresh CLI processes
@@ -68,6 +70,8 @@ jobs:
         run: python examples/jobs_workflow.py
       - name: Protected regions across two edits, restore and branch
         run: python examples/regions_workflow.py
+      - name: Layer revision, comparison and exact selected-version export
+        run: python examples/composition_workflow.py
       - name: Console entry point
         run: matter-audio capabilities --json
       - name: Whitespace check

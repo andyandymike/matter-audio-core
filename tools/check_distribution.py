@@ -44,6 +44,8 @@ def main() -> None:
     require(len(wheels) == len(sources) == 1, "Expected exactly one wheel and one sdist")
     modules = {p.relative_to(ROOT / "src").as_posix(): p.read_bytes()
                for p in (ROOT / "src/matter_audio_core").rglob("*.py")}
+    resources = {p.relative_to(ROOT / "src").as_posix(): p.read_bytes()
+                 for p in (ROOT / "src/matter_audio_core/web").iterdir() if p.suffix in (".html", ".css", ".js")}
     license_bytes = (ROOT / "LICENSE").read_bytes()
     with zipfile.ZipFile(wheels[0]) as wheel:
         names = [entry.filename for entry in wheel.infolist() if not entry.is_dir()]
@@ -51,7 +53,7 @@ def main() -> None:
         metadata_paths = [name for name in names if name.endswith(".dist-info/METADATA")]
         require(len(metadata_paths) == 1, "Expected one wheel metadata file")
         info = metadata_paths[0].rsplit("/", 1)[0]
-        allowed = set(modules) | {f"{info}/{name}" for name in (
+        allowed = set(modules) | set(resources) | {f"{info}/{name}" for name in (
             "METADATA", "WHEEL", "entry_points.txt", "top_level.txt", "RECORD", "licenses/LICENSE")}
         require(set(names) == allowed, "Unexpected or missing wheel contents")
         metadata = BytesParser().parsebytes(wheel.read(metadata_paths[0]))
@@ -59,7 +61,7 @@ def main() -> None:
         require(metadata["License-Expression"] == "MIT", "Missing SPDX license metadata")
         require(metadata.get_all("License-File") == ["LICENSE"], "Missing license-file metadata")
         require(wheel.read(f"{info}/licenses/LICENSE") == license_bytes, "Wheel license mismatch")
-        for name, data in modules.items():
+        for name, data in {**modules, **resources}.items():
             require(wheel.read(name) == data, f"Wheel module differs from source: {name}")
     with tarfile.open(sources[0], "r:gz") as source:
         entries = source.getmembers()
@@ -82,8 +84,12 @@ def main() -> None:
                          "integrations/codex/matter-audio/references/jobs.md"})
         required.update({"docs/regions.md", "examples/regions_workflow.py", "tests/test_regions.py",
                          "integrations/codex/matter-audio/references/regions.md"})
+        required.update({"docs/audition.md", "docs/composition.md", "docs/model-adapters.md",
+                         "examples/composition_workflow.py", "tests/test_audition.py", "tests/test_composition.py",
+                         "tests/test_processes.py", "tests/test_web.cjs", "tests/process_fixture.py", "tests/process_host.py",
+                         "integrations/codex/matter-audio/references/comparison-and-layers.md"})
         require(required <= relative, f"Missing sdist files: {sorted(required - relative)}")
-        for name, data in {"LICENSE": license_bytes, **{"src/" + k: v for k, v in modules.items()}}.items():
+        for name, data in {"LICENSE": license_bytes, **{"src/" + k: v for k, v in {**modules, **resources}.items()}}.items():
             member = source.extractfile(f"{prefix}/{name}")
             require(member is not None and member.read() == data, f"Sdist content differs: {name}")
     print(json.dumps({"status": "passed", "core_modules": len(modules), "archives": [

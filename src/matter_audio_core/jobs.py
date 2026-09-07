@@ -277,7 +277,8 @@ class JobService:
                 job = self._job(connection, job_id)
                 cancelled = job["state"] == "cancel_requested"
                 self._stop(connection, job, "cancelled" if cancelled else "failed" if error else "interrupted",
-                           {"code": "job_cancelled", "message": "Worker stopped without a complete result"}
+                           {"code": "job_cancelled", "message": "Worker stopped without a complete result",
+                            **({"worker_error": error} if error else {})}
                            if cancelled else error or {"code": "worker_interrupted", "message": "No complete result; explicit retry is available"})
         else:
             self._finish(job_id, result)
@@ -347,14 +348,16 @@ class JobService:
         if result is not None and self.store.show_request(current["action_request_id"]) != result:
             raise AudioError("integrity_error", "Registered result differs from the immutable publication")
         attempts = [{key: row[key] for key in ("attempt", "action_request_id", "state", "started_at", "finished_at")} |
-                    {"error": document(row["error_json"]) if row["error_json"] else None}
+                    {"error": document(row["error_json"]) if row["error_json"] else None} |
+                    self.store.execution_evidence(row["action_request_id"])
                     for row in rows[:limit]]
         return {"schema": "matter-job/v1", "status": job["state"], "job": job_record(job),
                 "action": document(job["spec_json"])["action"],
                 "resolution": document(current["resolution_json"]), "attempts": attempts,
                 "next_offset": offset + limit if len(rows) > limit else None, "result": result,
                 "error": document(current["error_json"]) if current["error_json"] else None,
-                "playback": self.store.playback_refs(result or {})}
+                "playback": self.store.playback_refs(result or {}),
+                **self.store.execution_evidence(current["action_request_id"])}
 
     def list_jobs(self, *, session_id=None, offset=0, limit=50):
         page_parameters(offset, limit)

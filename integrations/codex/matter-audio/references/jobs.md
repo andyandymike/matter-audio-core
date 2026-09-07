@@ -70,5 +70,7 @@ execution states.
 Direct `action execute` remains available, with legacy incomplete claims still
 reporting `recovery_pending`. Do not describe it as a managed job. Core 0.4 jobs
 freeze the session's constraint policy automatically. Changed policies require a
-new request; read [protected editing](regions.md). Model process cancellation and
-game integration remain separate capabilities.
+new request; read [protected editing](regions.md). Core 0.5 adds owned process-tree
+cancellation and durable attempt evidence for configured local model adapters;
+read [comparison, layers and local models](comparison-and-layers.md). Game
+integration remains a separate capability.

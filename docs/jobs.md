@@ -207,3 +207,16 @@ and [Unix flock](https://docs.python.org/3/library/fcntl.html#fcntl.flock) inter
 Network/synchronized workspaces, hostile writers and power-loss durability are
 outside the verified boundary. Process-exit recovery does not prove these cases.
 Workflow success is separate from human listening acceptance.
+
+## Model processes in core 0.5
+
+Trusted product adapters can use an owned backend process tree. Cancellation is
+acknowledged only after termination of the launcher and running descendants.
+Timeouts, nonzero exits and unconfirmed termination have distinct errors. No model
+is added to the core dependency graph. See [model adapters](model-adapters.md).
+
+Per-attempt execution journals survive a missing/failed final audio publication.
+`job show` includes known model launches, elapsed time and failure/cancellation
+outcomes. A launched process counts even when it fails. An interrupted launch
+without acknowledgement has a `null` call count and an explicit uncertainty
+count; it is not zero-call evidence. Explicit retries retain earlier attempts.

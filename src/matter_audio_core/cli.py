@@ -97,6 +97,20 @@ def build_parser(product: str, *, allow_import: bool = True) -> Parser:
         batch.add_parser(name).add_argument("--request", type=Path, required=True)
     for name in ("run", "recover", "show"):
         batch.add_parser(name).add_argument("batch_id")
+    audition = commands.add_parser("audition").add_subparsers(dest="audition_command", required=True)
+    audition.add_parser("create").add_argument("--request", type=Path, required=True)
+    audition.add_parser("show").add_argument("audition_id")
+    comparisons = audition.add_parser("list")
+    comparisons.add_argument("--session", dest="session_id", required=True)
+    comparisons.add_argument("--offset", type=int, default=0)
+    comparisons.add_argument("--limit", type=int, default=20)
+    serving = audition.add_parser("serve")
+    serving.add_argument("audition_id")
+    serving.add_argument("--port", type=int, default=0)
+    serving.add_argument("--ready-file", type=Path)
+    exporting = commands.add_parser("export").add_subparsers(dest="export_command", required=True)
+    exporting.add_parser("create").add_argument("--request", type=Path, required=True)
+    exporting.add_parser("show").add_argument("request_id")
     return parser
 
 
@@ -159,12 +173,16 @@ def run(argv: Sequence[str] | None = None, *, product: str = "matter-audio",
         args = parser.parse_args(arguments)
         registry = registry or Registry()
         if args.command == "capabilities":
+            from .audition import AUDITION_SCHEMA
+            from .delivery import EXPORT_SCHEMA
             result = {"schema": "matter-capabilities/v1", "product": product,
                       "core_version": __version__, "operations": registry.capabilities(),
                       "sessions": session_capabilities(),
                       "jobs": job_capabilities(),
                       "transport": "cli-json/v1", "audio_model_calls": 0,
-                      "limitations": ["Comparison UI, selected-version export and model editing are not implemented."]}
+                      "audition": {"availability": "available", "create_schema": AUDITION_SCHEMA, "transport": "loopback-http/v1"},
+                      "export": {"availability": "available", "create_schema": EXPORT_SCHEMA},
+                      "limitations": ["Model editing requires an explicitly configured product backend."]}
             if capability_extra:
                 result["product_capabilities"] = capability_extra()
         else:
@@ -200,6 +218,21 @@ def run(argv: Sequence[str] | None = None, *, product: str = "matter-audio",
                 result = session_command(args, store, registry)
             elif args.command in ("job", "batch"):
                 result = job_command(args, store, registry)
+            elif args.command == "audition":
+                from .audition import AuditionService
+                if args.audition_command == "serve":
+                    from .audition_server import serve
+                    result = serve(store, args.audition_id, registry, port=args.port, ready_file=args.ready_file)
+                else:
+                    comparison = AuditionService(store, registry)
+                    if args.audition_command == "list":
+                        result = comparison.list(args.session_id, offset=args.offset, limit=args.limit)
+                    else:
+                        result = comparison.create(read_json(args.request)) if args.audition_command == "create" else comparison.show(args.audition_id)
+            elif args.command == "export":
+                from .delivery import ExportService
+                exporting = ExportService(store)
+                result = exporting.create(read_json(args.request)) if args.export_command == "create" else exporting.show(args.request_id)
             elif handle_extra:
                 result = handle_extra(args, store)
             else:

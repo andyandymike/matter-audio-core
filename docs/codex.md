@@ -59,5 +59,11 @@ session policy automatically; direct protected actions bind an exact revision.
 Upgrade 0.2/0.3 workspaces with `session migrate`. Restore includes the historical
 policy, so restoring an unlocked revision explicitly removes later locks.
 
-The skill returns verified playback paths and measured changes. Audio generation remains a separate
-product capability; installing the core does not enable it.
+Core 0.5 adds comparison, exact export, layering/splice and optional local-model
+instructions. `context show` retrieves comparison IDs; an on-demand browser page
+is opened only when useful. The user can defer listening while engineering work
+continues. Update the installed Skill and all product environments together.
+
+The skill returns verified playback paths and measured changes. Model editing
+requires a separately configured product adapter; installing the core does not
+install weights or enable a paid provider.

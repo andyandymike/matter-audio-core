@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Matter Audio · 版本比较</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<body>
+<header><div class="brand"><span class="mark">m</span><span>MATTER <b>AUDIO</b></span></div><span class="local">本地制作台</span><button id="refresh">刷新会话</button></header>
+<section class="heading"><p class="eyebrow">COMPARE / 版本比较</p><h1 id="title">正在读取作品…</h1><p id="summary">载入已保存的版本和保护规则。</p></section>
+<div id="notice" role="status" aria-live="polite"></div>
+<main>
+<nav aria-label="音频候选"><div class="section-label">版本 <span id="count"></span></div><div id="candidates"></div><p class="hint">点击只切换预览。<br>保存选择后才会更新作品。</p></nav>
+<section class="canvas" aria-labelledby="preview-title">
+<div class="preview-head"><div><p class="eyebrow">预览</p><h2 id="preview-title">—</h2></div><span id="format" class="mono"></span></div>
+<div class="wave-shell"><canvas id="wave" aria-label="音频波形与保护区"></canvas><div class="wave-axis"><span>0 s</span><span id="duration">—</span></div></div>
+<div class="legend"><span class="protected-key"></span>保护区域 <span id="protection">读取中</span></div>
+<div class="range"><label>起点（帧）<input id="start" type="number" min="0" step="1" value="0"></label><label>终点（帧，不含）<input id="end" type="number" min="1" step="1"></label><button id="full">全片段</button></div>
+<p class="hint" id="range-seconds"></p>
+<div class="transport"><button id="play" class="primary">播放片段</button><button id="stop">停止</button><button id="repeat">重复 4 次</button><button id="loop" aria-pressed="false">循环片段</button></div>
+<div class="ab"><span>同一位置比较</span><button id="reference">原版 A</button><button id="variant">候选 B</button><label class="check"><input type="checkbox" id="match">匹配试听音量</label></div>
+<p id="gain-info" class="hint">按原始音量播放，导出保持原文件。</p>
+<details><summary>修订历史与恢复</summary><div id="history"></div></details>
+</section>
+<aside><div class="section-label">保存与交付</div><h3 id="saved">当前选择 —</h3><p id="selection-info" class="hint"></p>
+<button id="select" class="primary wide">保存当前候选</button><button id="export" class="wide">导出已保存版本</button><p id="export-info" class="hint"></p>
+<hr><label for="feedback">当前已保存版本的反馈</label><textarea id="feedback" rows="4" maxlength="4000" placeholder="写下你的实际观察，供下一轮修改使用。"></textarea>
+<button id="save-feedback" class="wide">保存反馈</button><div id="feedback-list"></div>
+</aside></main>
+<footer><span>MATTER AUDIO CORE</span><span>预览音量与循环设置不修改音频文件。</span></footer>
+</body></html>

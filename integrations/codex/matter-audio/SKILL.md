@@ -1,6 +1,6 @@
 ---
 name: matter-audio
-description: Use Matter Audio Core, SonicMatter or ScoreMatter for local sound-effect/BGM authoring, inspection, gain, trim, fades, exact PCM protection, persistent selection and feedback. Use registered paper recordings through SonicMatter. Model generation and game integration are separate capabilities.
+description: Use Matter Audio Core, SonicMatter or ScoreMatter for local audio editing, layering, bounded splices, PCM protection, comparison, feedback and export. Use registered recordings through SonicMatter and explicitly configured local SA3 edits through ScoreMatter. Game integration is separate.
 ---
 
 # Matter audio authoring
@@ -37,9 +37,10 @@ product's `docs/shared-audio.md` when preparing that operation.
 
 Explain the intended preservation, change, operation and listening focus briefly.
 Use actual returned asset IDs, frame counts, digests and measurements. Present
-the verified local `playback` WAV using an absolute-path audio embed, and distinguish
-measured changes from listening judgments. These operations use zero audio-model
-calls; returning audio does not mean the language model has heard it.
+the verified local `playback` WAV using an absolute-path audio embed when listening
+is requested, and distinguish measured changes from listening judgments. Respect
+a request to defer listening. Built-in PCM and registered-recording operations use
+zero audio-model calls; returning audio does not mean the language model has heard it.
 
 Reuse a request ID when querying or retrying the same action. A different request
 under that ID conflicts. On timeout or `recovery_pending`, query `action show`
@@ -68,3 +69,12 @@ For requests to preserve an intro or transient while editing the rest, check
 Core 0.4 adds PCM locks and generic `fade/v1`. Read current context before each
 continued edit; use managed jobs to bind the session's policy automatically.
 Keep the selected input, resolved frames and actual preservation evidence in view.
+
+Core 0.5 adds a local comparison page, exact saved-version exports, `mix/v1` and
+`splice/v1`. Read [comparison, layers and local models](references/comparison-and-layers.md).
+Use `context show` or `audition list --session <id>` to recover comparison IDs.
+An available ScoreMatter `score.sa3_inpaint/v1` operation is a local model call;
+check its configured availability and the user's scope before executing. Report
+actual launches, cancellation/failure, timing and any uncertainty from job evidence.
+Do not equate model-mask preservation with exact final PCM, silently install
+weights, call a paid API or manufacture a listening verdict.

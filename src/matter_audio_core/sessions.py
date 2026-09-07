@@ -312,7 +312,9 @@ class SessionService:
         with self.database.transaction() as connection:
             state = self._show(connection, session_id, 0, history_limit)
             from .jobs import session_jobs
+            from .audition import session_auditions
             jobs = session_jobs(connection, session_id)
+            auditions = session_auditions(connection, session_id)
             feedback = self._feedback_list(connection, session_id, None, 0, feedback_limit)
             asset = state["current"]["selected_asset"]
             relevant = {"feedback": [], "next_offset": None} if asset is None else self._feedback_list(
@@ -334,6 +336,6 @@ class SessionService:
                 "constraints": {"availability": "available", "policy": state["current"]["constraints"],
                     "mapped_regions": project_constraints(self.store, state["current"]["constraints"],
                                                           asset["asset_id"] if asset else None)},
-                "jobs": jobs,
+                "jobs": jobs, "auditions": auditions,
                 "limitations": ["Feedback is attributed to its recorded source; it is not verified listening acceptance.",
                                 "Direct actions do not select outputs; managed jobs may request guarded selection."]}

@@ -31,6 +31,7 @@ MUTATIONS = {"submit": SUBMIT, "cancel": CANCEL, "retry": RETRY,
 def capabilities():
     return {"availability": "available", "mutation_schemas": MUTATIONS,
             "execution": "synchronous_local_worker", "recovery": "explicit_verify_and_register",
-            "cancellation": "cooperative_checkpoints_and_operation_boundaries",
+            "cancellation": "cooperative_checkpoints_and_owned_backend_processes",
+            "model_attempt_evidence": "durable_launch_and_shutdown_journal/v1",
             "retry": "explicit_new_attempt_after_confirmed_stop",
             "scope": "Managed jobs only; legacy action claims are never reclaimed."}

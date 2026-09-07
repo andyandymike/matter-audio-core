@@ -32,7 +32,21 @@ not user listening feedback. `examples/jobs_workflow.py` runs four candidates
 through injected I/O failure, abrupt process exit, recovery and targeted retry.
 `examples/regions_workflow.py` compares four candidate PCM payloads, protects a
 prefix, performs two edits and verifies restore/branch through fresh CLI processes.
-CI runs all four examples against the installed wheel.
+CI runs these examples against the installed wheel.
+
+Core 0.5 adds HTTP token/origin/asset-scope tests, audio byte ranges, durable
+comparison state and exact export receipts. Composition fixtures check stereo
+arithmetic, independent layers, conservative writes and bounded change reports.
+Process tests start real child/grandchild fixtures and verify cancellation,
+timeouts, parent crashes, descendant cleanup and durable execution evidence.
+These fixtures do not run an audio model. `node tests/test_web.cjs` verifies the
+controller's A/B gain, repetition/loop ranges, stop-during-load race and lost
+response handling without a browser or audio device.
+
+`examples/composition_workflow.py` checks a layer revision, unchanged PCM,
+persistent comparison and export through fresh CLI processes. Browser layout
+and product/model runtime checks are performed separately from this synthetic
+suite; the repository does not claim that CI exercises real model weights.
 
 `tests/test_regions.py` covers stereo fade arithmetic/endpoints, half-up seconds,
 unchanged bytes, moving inner locks, forbidden writes/deletions, unprotected

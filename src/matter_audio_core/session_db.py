@@ -9,7 +9,7 @@ from .artifacts import ArtifactStore, safe_path
 from .errors import AudioError
 
 DATABASE_NAME = "sessions.sqlite3"
-DATABASE_VERSION = 3
+DATABASE_VERSION = 4
 APPLICATION_ID = 0x4D415353
 
 # Execute individually: executescript() can implicitly commit pending work.
@@ -75,6 +75,11 @@ MIGRATIONS = {1: (
     )""",
 ), 3: (
     "ALTER TABLE revisions ADD COLUMN constraints_json TEXT NOT NULL DEFAULT 'null'",
+), 4: (
+    """CREATE TABLE auditions (
+        audition_id TEXT PRIMARY KEY, session_id TEXT NOT NULL, spec_json TEXT NOT NULL,
+        created_at TEXT NOT NULL, FOREIGN KEY (session_id) REFERENCES sessions(session_id)
+    )""",
 )}
 
 

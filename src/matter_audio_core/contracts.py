@@ -94,7 +94,7 @@ ACTION_SCHEMA = object_schema({
     "schema": {"const": REQUEST_SCHEMA},
     "request_id": {"type": "string", "pattern": REQUEST_PATTERN},
     "operation": {"type": "string", "minLength": 1, "maxLength": 96},
-    "inputs": {"type": "array", "minItems": 1, "maxItems": 1,
+    "inputs": {"type": "array", "minItems": 1, "maxItems": 16,
                "items": {"type": "string", "pattern": ASSET_PATTERN}},
     "parameters": {"type": "object"},
     "protection": PROTECTION_REF,

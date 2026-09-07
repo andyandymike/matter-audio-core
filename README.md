@@ -6,7 +6,7 @@
 [简体中文](README.zh-CN.md)
 
 Local audio authoring primitives for tools and coding agents: import a WAV,
-inspect its levels, apply gain/fades, trim by frames or seconds, and keep a verifiable
+inspect its levels, apply gain/fades, layer or splice audio, and keep a verifiable
 record of every result. Commands return JSON and paths to playable WAV files.
 
 The core runs independently and provides shared operations for SonicMatter and
@@ -14,11 +14,17 @@ ScoreMatter adapters. It does not require a GPU, model weights, API keys or an
 audio generation service. The optional [Codex integration](docs/codex.md) uses
 the standalone core or configured product CLIs.
 
-**Status:** `0.4.0`, early development. Windows and Linux, Python 3.10+ with
+**Status:** `0.5.0`, early development. Windows and Linux, Python 3.10+ with
 standard-library SQLite support. Persistent sessions now include managed jobs,
 explicit crash recovery, partial batch retries and cooperative CPU cancellation.
-PCM region locks preserve exact samples through continuous trim/fade edits.
-macOS publication and generative editing are not implemented.
+PCM region locks preserve exact samples through continuous edits. A local
+comparison page records selection/feedback and exports the exact saved WAV.
+Optional product model adapters use owned process trees and durable attempt
+records; models are not bundled. macOS publication remains unsupported.
+
+See [comparison and export](docs/audition.md), [layering and replacement](docs/composition.md)
+and [local model adapters](docs/model-adapters.md). Run
+`python examples/composition_workflow.py` for a synthetic end-to-end example.
 
 ## Quick start
 

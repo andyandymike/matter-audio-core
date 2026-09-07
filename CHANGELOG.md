@@ -1,6 +1,19 @@
 # Changelog
 
-## 0.4.0 — Unreleased
+## 0.5.0 — 2026-09-07
+
+- Persistent comparison sets and a loopback browser page for frame-range playback,
+  repetition, looping, A/B comparison, preview RMS matching, selection and feedback.
+- Exact selected-version WAV delivery with immutable, revision-bound export receipts.
+- Multi-input `mix/v1`, bounded `splice/v1`, complete parent references and measured
+  write-region reports. Existing single-input and Sonic fused-Q15 profiles retain
+  their arithmetic.
+- Optional model-adapter output/proposal contracts, owned process trees on
+  Windows/Linux and durable launch/failure/cancellation evidence per attempt.
+- SQLite schema 4 migration, controller/process-tree tests and an end-to-end
+  layer/comparison/export example. Model weights remain outside the package.
+
+## 0.4.0 — 2026-09-06
 
 - Exact PCM region constraints anchored to immutable selected assets, with
   identity/slice projection through successive edits, restores and branches.

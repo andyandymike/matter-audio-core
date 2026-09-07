@@ -11,6 +11,36 @@ from .contracts import digest
 from .errors import AudioError
 
 _CHECKPOINT = ContextVar("matter_audio_checkpoint", default=None)
+_EVIDENCE = ContextVar("matter_audio_execution_evidence", default=None)
+
+
+def record_execution(event):
+    recorder = _EVIDENCE.get()
+    if recorder is not None:
+        recorder(event)
+
+
+@contextmanager
+def execution_records(recorder):
+    token = _EVIDENCE.set(recorder)
+    try:
+        yield
+    finally:
+        _EVIDENCE.reset(token)
+
+
+def summarize_execution(events):
+    if not events:
+        return {}
+    calls = {}
+    for event in events:
+        if event.get("audio_model"):
+            calls.setdefault(event["call_id"], {}).update(event)
+    known = sum(call.get("backend_started") is True for call in calls.values())
+    uncertain = sum(call.get("backend_started") is None for call in calls.values())
+    return {"audio_model_calls": None if uncertain else known,
+            "execution": {"schema": "matter-execution/v1", "events": events,
+                          "known_audio_model_calls": known, "uncertain_launch_count": uncertain}}
 
 
 def checkpoint(*, force=False):

@@ -18,6 +18,7 @@ from . import __version__
 from .contracts import (ASSET_PATTERN, REQUEST_PATTERN, RESULT_SCHEMA, canonical,
                         digest, fingerprint, read_json, validate)
 from .errors import AudioError
+from .execution import execution_records, summarize_execution
 from .media import MAX_AUDIO_BYTES, decode_wav
 
 
@@ -184,11 +185,28 @@ class ArtifactStore:
         target = self.root / "objects" / claim["group_id"]
         if not target.exists():
             raise AudioError("recovery_pending", "Request is running or requires recovery; do not resubmit with a new ID",
-                             details={"request_id": request_id})
+                             details={"request_id": request_id, **self.execution_evidence(request_id)})
         result = self._load_group(claim["group_id"])
         if result["request_id"] != request_id or result["binding_digest"] != claim["binding_digest"]:
             raise AudioError("integrity_error", "Result does not match its request claim")
         return result
+
+    def execution_evidence(self, request_id: str) -> dict:
+        directory = self._request_path(request_id)
+        if not directory.exists():
+            return {}
+        claim = read_json(directory / "claim.json")
+        events = []
+        for sequence, entry in enumerate(sorted(directory.glob("execution-*"))):
+            safe_path(entry)
+            document = read_json(entry / "event.json")
+            if (entry.name != f"execution-{sequence:04d}" or document["claim"] != claim
+                    or document["sequence"] != sequence
+                    or fingerprint(document)["hex"] != (entry / "event.sha256").read_text("ascii")
+                    or {p.name for p in entry.iterdir()} != {"event.json", "event.sha256"}):
+                raise AudioError("integrity_error", "Invalid execution journal")
+            events.append(document["event"])
+        return summarize_execution(events)
 
     def transact(self, request_id: str, binding: dict, producer: Callable[[Publication], dict]) -> dict:
         self._workspace(create=True)
@@ -204,8 +222,20 @@ class ArtifactStore:
                 raise AudioError("request_conflict", "Request ID already binds different inputs or parameters")
             return self.show_request(request_id)
         publication = Publication(group_id)
+        events = []
+
+        def record(event):
+            if len(events) >= 1000:
+                raise AudioError("execution_limit", "Execution journal exceeds its event limit")
+            document = {"schema": "matter-execution-event/v1", "claim": claim,
+                        "sequence": len(events), "event": event}
+            self._publish(target / f"execution-{len(events):04d}", {
+                "event.json": canonical(document), "event.sha256": fingerprint(document)["hex"].encode("ascii")})
+            events.append(event)
+
         try:
-            extra = producer(publication)
+            with execution_records(record):
+                extra = producer(publication)
             status = "succeeded"
         except AudioError as exc:
             publication = Publication(group_id)
@@ -213,7 +243,7 @@ class ArtifactStore:
         result = {"schema": RESULT_SCHEMA, "group_id": group_id, "request_id": request_id,
                   "core_version": __version__, "product": self.product, "status": status,
                   "binding_digest": binding_digest, "binding": binding,
-                  "audio_model_calls": 0, "outputs": publication.outputs, **extra}
+                  "audio_model_calls": 0, "outputs": publication.outputs, **extra, **summarize_execution(events)}
         self._publish(self.root / "objects" / group_id, {
             **publication.files, "manifest.json": canonical(result),
             "manifest.sha256": fingerprint(result)["hex"].encode("ascii"),

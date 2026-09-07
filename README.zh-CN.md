@@ -3,15 +3,17 @@
 [English](README.md)
 
 供工具和编程代理使用的本地音频制作核心：导入 WAV、检查电平、调整增益、
-按帧或秒裁剪、淡入淡出，并为每次结果保留来源、摘要和处理参数。CLI 返回 JSON 和可播放的 WAV 路径。
+按帧或秒裁剪、淡入淡出、分层混音和窗口拼接，并为每次结果保留来源、摘要和处理参数。
+CLI 返回 JSON 和 WAV 路径，本地比较页可保存选择、反馈并导出所选版本。
 
 核心可独立使用，也可供 SonicMatter 和 ScoreMatter 共用。确定性操作无需 GPU、
 模型权重或 API key。[Codex 入口](docs/codex.md)通过配置好的产品 CLI 调用。
 
-当前版本为 **0.4.0，早期开发阶段**。面向 Windows / Linux、带标准库 SQLite 的 Python 3.10+。
+当前版本为 **0.5.0，早期开发阶段**。面向 Windows / Linux、带标准库 SQLite 的 Python 3.10+。
 持久会话已加入托管任务、显式中断恢复、批次失败项重试与 CPU 协作取消。
 PCM 区域锁支持在连续裁剪和淡入淡出中逐帧保留指定片段。
-macOS 的结果发布和生成式编辑尚未实现。
+可选产品适配器可接入本地模型编辑，支持进程树取消和调用记录；核心包不包含模型与权重。
+macOS 的结果发布尚未实现。
 
 ## 快速运行
 
@@ -40,9 +42,11 @@ Linux 环境创建 `.venv` 后使用 `source .venv/bin/activate`，再运行
 | `gain/v1` | `db`，可选 `clip` 策略 | 按明确 Q24 规则处理的 PCM16 WAV |
 | `trim/v1` | 帧或秒的起止坐标 | 精确裁剪；结束位置不包含在内 |
 | `fade/v1` | 帧或秒的淡入/淡出长度 | 线性振幅 Q24 淡化，其余 PCM 精确保留 |
+| `mix/v1` | 基底、各层输入、窗口、位置、增益和淡化 | 固定长度混音；可从原配方独立修改一层 |
+| `splice/v1` | 基底与替换素材、目标窗口、源起点、过渡长度 | 仅改写指定窗口，过渡也包含在窗口内 |
 
 输入仅支持非空、最大 64 MiB、8–192 kHz 的单/双声道 PCM16 WAV。
-其他格式需要显式解码适配器。
+其他格式需要显式解码适配器。多输入动作要求格式相同，所有输入 WAV 总计不超过 64 MiB。
 
 每个 workspace 保存不可变快照与完整结果。同一请求 ID 重复提交相同动作会返回原结果；
 同 ID 修改参数会报冲突。`recovery_pending` 表示动作正在运行或曾中断，需要查询状态，
@@ -72,7 +76,7 @@ Linux 环境创建 `.venv` 后使用 `source .venv/bin/activate`，再运行
 恢复已有完整结果，只重试失败候选，其他成功结果保持不变。
 `job submit / run / show / recover / cancel / retry` 和
 `batch submit / run / show / recover / retry` 提供对应操作。
-0.2/0.3 数据库升级到 0.4 需先执行 `session migrate`，已有音频和历史内容保持原样。
+旧数据库升级到 0.5 的 schema 4 需先执行 `session migrate`，已有音频和历史内容保持原样。
 具体请求、取消确认与兼容边界见 [任务说明](docs/jobs.md)。
 
 运行 `python examples/regions_workflow.py` 可制作四个尾部包络不同的候选，选择 B 后锁定前缀，
@@ -82,6 +86,17 @@ Linux 环境创建 `.venv` 后使用 `source .venv/bin/activate`，再运行
 `constraints set` 把保护区绑定到当前所选资产并新增修订。托管任务自动绑定约束，
 直接动作可显式绑定会话修订。普通选择不能丢弃锁定片段；恢复历史修订会同时恢复音频和当时的约束，
 包括恢复到未设锁的历史状态。请求和算法见 [保护区与淡化说明](docs/regions.md)。
+
+运行 `python examples/composition_workflow.py` 可验证独立调节一层、其余区域保持不变、
+比较集合持久化与精确导出。`audition create / show / serve` 准备并打开本地比较页；
+页面提供片段播放、重复、循环、A/B 切换和仅影响预览的音量匹配。
+`export create / show` 保存并验证所选 WAV，不重新编码。
+详见[比较与导出](docs/audition.md)、[分层与拼接](docs/composition.md)。
+
+兼容的 ScoreMatter checkout 可注册 `score.sa3_inpaint/v1`，使用其已有 SA3 本地运行环境。
+模型负责提出候选，共用拼接负责最终 PCM 写入边界；原始候选、实际改动、调用次数、耗时和失败
+分开记录。先查询产品能力，具体依赖和限制见[模型适配说明](docs/model-adapters.md)。
+当前工程验证不代替人工试听，也不包含 BornAgent 或游戏集成。
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
