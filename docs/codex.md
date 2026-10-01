@@ -104,9 +104,20 @@ free or unknown timing still supports seconds and frames. A generation target
 does not establish the audio's actual tempo. Planning freezes the converted
 ranges, rounding error and downstream request before execution. It publishes
 metadata without processing audio or changing a session. Execution reuses shared
-trim, loop or region protection; select any resulting audio explicitly afterward.
+trim, loop, splice or region protection; select any resulting audio explicitly afterward.
 Protection plans add to existing locks. Loop crossfade shortens the output period,
 which the plan reports. An edited audio asset does not inherit old annotations.
+
+For section replacement, a `splice` music plan names one base region and a
+replacement annotation/region. Both complete regions must resolve to equal frame
+counts with matching sample rates and channels; equal bar counts alone are not
+enough. The plan binds both exact versions and uses Core's existing `splice/v1`.
+It preserves the base duration and all PCM outside the target window. Explicit
+edge transitions stay inside that window, and protection refers to the base.
+There is no implicit cropping, padding or time stretching. See the
+[ScoreMatter request example](https://andyandymike.github.io/score-matter/shared-audio/)
+for the replacement schema; inspect the plan before executing it. Engineering
+checks do not establish that the musical join sounds natural.
 
 Core 0.2 adds persistent sessions and attributed feedback. Check the installed
 CLI's `sessions` capability before using them; older product environments can

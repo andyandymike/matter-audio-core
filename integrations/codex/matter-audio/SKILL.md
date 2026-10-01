@@ -90,6 +90,10 @@ a requested BPM in a generation prompt is not evidence of the generated audio's
 beat grid. Planning saves a reviewable immutable plan; executing it is a separate
 step and does not select the resulting audio. Report actual frame ranges and any
 overlap-induced reduction in loop period. New audio needs its own annotations.
+For named-section replacement, bind the base and replacement annotations and
+check their complete resolved frame lengths, sample rates and channels. Use the
+installed splice plan schema; equal bar counts alone do not establish equal
+duration. Keep transitions inside the editable region and preserve base locks.
 
 Explain the intended preservation, change, operation and listening focus briefly.
 Use actual returned asset IDs, frame counts, digests and measurements. Present

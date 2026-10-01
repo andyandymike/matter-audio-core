@@ -66,6 +66,53 @@ publication retains the Core recovery boundary; never invent a new ID to conceal
 an interrupted attempt. Audio outputs are candidates and need explicit session
 selection with the current revision.
 
+## Replace a named section
+
+When the installed plan schema includes `target.kind: splice`, select one base
+region and one replacement region from exact saved annotations. For example,
+replace the base's `chorus` with the replacement candidate's `chorus`:
+
+```json
+{
+  "schema": "score-music-plan/v1",
+  "request_id": "replace-chorus-001",
+  "annotation_id": "BASE_ANNOTATION_ID",
+  "region_ids": ["chorus"],
+  "target": {
+    "kind": "splice",
+    "replacement": {
+      "annotation_id": "REPLACEMENT_ANNOTATION_ID",
+      "region_id": "chorus"
+    },
+    "transition_frames": 0
+  }
+}
+```
+
+Replace both placeholders with returned annotation asset IDs. Use the existing
+`music plan`, `music show`, and `music execute` commands. The frozen plan binds
+both annotation/audio references, the full replacement region and the Core
+resolution. Changed replacement identity or coordinates cannot reuse the old
+execution identity. Inspect both converted windows and their rounding errors.
+
+The two complete regions must have the same **resolved frame count**, sample
+rate and channel count. Equal bar counts do not establish this, especially with
+different tempo grids. A longer replacement is rejected rather than implicitly
+cropped; a shorter one is not padded. Choose compatible audio. To use a smaller
+part, create a new annotation that explicitly marks the desired range.
+
+`transition_frames` is explicit: zero performs direct replacement; a positive
+value blends inside both ends of the destination window and must fit without
+overlap. Core's one-frame transition retains the base sample at that edge.
+The output keeps the base's duration and copies all PCM outside the window
+exactly. This guarantee does not mean that the musical join will sound natural.
+
+An optional `target.protection` refers to the **base** audio's session policy.
+Overlapping protected PCM is rejected before rendering; successful results
+include Core's actual change and transition evidence. The replacement asset is
+an input, not a new current selection. Results retain both annotation references,
+but neither source annotation is automatically attached to the new audio.
+
 This route does not infer beats, stretch time, follow variable tempo, inherit
 themes, judge loop naturalness or approve musical quality. Respect deferred
 listening and keep structural validation separate from listening evidence.

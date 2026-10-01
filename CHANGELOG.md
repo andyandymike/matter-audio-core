@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Codex guidance for ScoreMatter named-section replacement, binding both source
+  annotations and equal frame ranges to the existing protected splice operation.
 - Codex support for ScoreMatter music annotation and planning requests, with
   asset-bound musical coordinates and explicit execution guidance.
 - Codex launcher support for Sonic project-recording manifests and Score
