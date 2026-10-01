@@ -83,6 +83,14 @@ Registration runs no model and does not establish listening approval, select a
 session version or grant publication rights. Choose its returned audio asset ID
 explicitly in the existing session flow.
 
+For bar/beat ranges or named musical sections, check the Score product's music
+capabilities and read [music coordinates and sections](references/music-coordinates.md).
+Music annotations bind one exact audio asset. Use explicit timing declarations;
+a requested BPM in a generation prompt is not evidence of the generated audio's
+beat grid. Planning saves a reviewable immutable plan; executing it is a separate
+step and does not select the resulting audio. Report actual frame ranges and any
+overlap-induced reduction in loop period. New audio needs its own annotations.
+
 Explain the intended preservation, change, operation and listening focus briefly.
 Use actual returned asset IDs, frame counts, digests and measurements. Present
 the verified local `playback` WAV using an absolute-path audio embed when listening

@@ -85,6 +85,29 @@ the saved result without the original files. An interrupted claim can report
 
 ## Continue shared authoring
 
+Compatible ScoreMatter checkouts expose asset-bound music annotations and plans.
+Use the product's `capabilities` and `docs/shared-audio.md` for their strict request
+schemas. The launcher resolves both `music annotate --request` and
+`music plan --request` from the caller's working directory:
+
+```sh
+python <skill-dir>/scripts/run_audio.py --product score -- music annotate --request annotations.json
+python <skill-dir>/scripts/run_audio.py --product score -- music show ANNOTATION_ASSET_ID
+python <skill-dir>/scripts/run_audio.py --product score -- music plan --request music-plan.json
+python <skill-dir>/scripts/run_audio.py --product score -- music show PLAN_ASSET_ID
+python <skill-dir>/scripts/run_audio.py --product score -- music execute PLAN_ASSET_ID
+```
+
+Annotations preserve the declared timing source, exact audio identity and named
+regions. Fixed-tempo grids require BPM, its note unit, meter and first-beat frame;
+free or unknown timing still supports seconds and frames. A generation target
+does not establish the audio's actual tempo. Planning freezes the converted
+ranges, rounding error and downstream request before execution. It publishes
+metadata without processing audio or changing a session. Execution reuses shared
+trim, loop or region protection; select any resulting audio explicitly afterward.
+Protection plans add to existing locks. Loop crossfade shortens the output period,
+which the plan reports. An edited audio asset does not inherit old annotations.
+
 Core 0.2 adds persistent sessions and attributed feedback. Check the installed
 CLI's `sessions` capability before using them; older product environments can
 still have core 0.1 installed. Use `context show <session-id>` when resuming and

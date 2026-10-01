@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Codex support for ScoreMatter music annotation and planning requests, with
+  asset-bound musical coordinates and explicit execution guidance.
 - Codex launcher support for Sonic project-recording manifests and Score
   candidate audio, generation records and intent files, resolved from the caller.
 - Project-scoped Codex launcher workspaces, explicit reuse of legacy configured

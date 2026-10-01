@@ -215,6 +215,30 @@ class SkillLauncherTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'requires a file path'):
                     self.plan(command=[*context, option])
 
+    def test_music_requests_use_caller_paths_and_asset_ids_remain_identifiers(self):
+        for command in ('annotate', 'plan'):
+            for option in (['--request', 'music.json'], ['--r=music.json']):
+                with self.subTest(command=command, option=option):
+                    argv = self.plan(product='score', command=['music', '--json', command, *option])['argv']
+                    expected = ['--request', str(self.nested / 'music.json')] if len(option) == 2 else [
+                        '--request=' + str(self.nested / 'music.json')]
+                    self.assertEqual(argv[argv.index('--workspace') + 2:], ['music', command, *expected])
+        for command in ('show', 'execute'):
+            forwarded = ['music', command, 'a_' + 'a' * 32 + '_0']
+            argv = self.plan(product='score', command=forwarded)['argv']
+            self.assertEqual(argv[argv.index('--workspace') + 2:], forwarded)
+
+    def test_music_requests_cannot_hide_linked_paths_or_missing_values(self):
+        source = self.root / 'music-files'
+        source.mkdir()
+        self.link_directory(self.nested / 'linked', source)
+        for command in ('annotate', 'plan'):
+            with self.subTest(command=command):
+                with self.assertRaisesRegex(ValueError, 'Reparse points and symlinks'):
+                    self.plan(command=['music', command, '--r=linked/music.json'])
+                with self.assertRaisesRegex(ValueError, 'requires a file path'):
+                    self.plan(command=['music', command, '--request', '--help'])
+
     def test_forwarded_workspace_and_unknown_leading_options_fail_explicitly(self):
         for option in (['--workspace', str(self.root / 'bypass')],
                        ['--w=' + str(self.root / 'bypass')]):

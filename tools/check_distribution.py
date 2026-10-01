@@ -80,6 +80,7 @@ def main() -> None:
                     "integrations/codex/matter-audio/config.example.json",
                     "integrations/codex/matter-audio/scripts/run_audio.py", "tools/check_distribution.py"}
         required.add("integrations/codex/matter-audio/references/sessions.md")
+        required.add("integrations/codex/matter-audio/references/music-coordinates.md")
         required.update({"docs/jobs.md", "examples/jobs_workflow.py", "tests/test_jobs.py", "tests/job_worker.py",
                          "integrations/codex/matter-audio/references/jobs.md"})
         required.update({"docs/regions.md", "examples/regions_workflow.py", "tests/test_regions.py",
