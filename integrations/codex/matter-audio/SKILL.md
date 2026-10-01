@@ -100,6 +100,14 @@ Report the actual total length and each occurrence's output range. This creates
 a new timeline; it does not transfer old musical grids, annotations or PCM locks.
 Do not bypass a required preservation policy through arrangement: protection
 parameters are unsupported, and source sessions must remain unchanged.
+When `score-music-arrange/v2` is available, request linear crossfades at explicit
+occurrence boundaries. Report the overlap ranges and shortened total duration;
+unlisted boundaries remain hard cuts. A new `music annotate-arrangement` request
+can mark selected occurrences on the completed output. Choose `full` (including
+mixed transition samples) or `body` (excluding both overlaps) explicitly. These
+new marks use unknown timing, retain provenance, and can feed subsequent musical
+plans; they do not create locks or select the result. Follow the music reference
+for a complete arrange, mark, protect, edit, select and export workflow.
 
 Explain the intended preservation, change, operation and listening focus briefly.
 Use actual returned asset IDs, frame counts, digests and measurements. Present

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Codex support for explicit ScoreMatter arrangement transitions and new
+  output-bound section annotations, continuing through protected edits and export.
 - Codex launcher and authoring guidance for ScoreMatter sequential music
   arrangements, with explicit repetitions and a saved source-to-output timeline.
 - Codex guidance for ScoreMatter named-section replacement, binding both source

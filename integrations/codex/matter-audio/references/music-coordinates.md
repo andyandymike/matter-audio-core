@@ -163,7 +163,7 @@ coordinate errors to inspect the mapping. Equal audio bytes with different asset
 IDs remain distinct inputs. Repetition uses actual source frames, including a
 previously constructed loop's shortened period if that output is the source.
 
-The first segment starts at output frame zero. Each occurrence follows the
+In v1 the first segment starts at output frame zero. Each occurrence follows the
 previous one without gaps or overlap; total duration is the sum of the actual
 source lengths times their repeat counts. No level adjustment, implicit fade,
 crossfade, padding, tempo fitting or resampling is applied. Sample rate and
@@ -184,3 +184,108 @@ select it explicitly and establish new annotations or protection where needed.
 This route does not infer beats, stretch time, follow variable tempo, inherit
 themes, judge loop naturalness or approve musical quality. Respect deferred
 listening and keep structural validation separate from listening evidence.
+
+## Request explicit transitions
+
+When capabilities advertise `score-music-arrange/v2`, use the same `segments`
+array with schema `score-music-arrange/v2`, a new request ID and a required
+`transitions` array. An empty array requests hard cuts. Each entry names the
+occurrence **after which** to blend into the next occurrence, for example:
+
+```json
+{
+  "after_segment_id": "theme",
+  "after_repeat_index": 1,
+  "crossfade_frames": 12000
+}
+```
+
+This entry blends the end of the second `theme` occurrence into the next
+occurrence. At 48 kHz, 12000 frames is 250 ms; use the actual source sample rate
+when translating a user's duration. Repeat indices start at zero. No entry means
+no transition at that boundary, including boundaries between repetitions.
+The final occurrence has no following boundary. Transition lengths are explicit
+integers of at least two frames; duplicate or missing boundaries are rejected.
+
+The renderer overlaps the existing tail and head and applies linear fades.
+It uses no extra handles, implicit padding, time stretching or beat alignment.
+The total output length is the sum of all occurrence lengths minus the requested
+overlaps. Inspect the plan's resolved transitions and occurrence ranges before
+execution. Each occurrence's incoming and outgoing overlaps must fit together
+within its source length; there is no three-way overlap. Compiling different
+occurrence fades can require more Core event definitions than a simple repeat.
+Core's 128-definition/1024-occurrence limits and the complete receipt size budget
+still apply, and excesses fail before a plan is claimed.
+
+Use the existing `music show` and `music execute` commands. This is a distinct
+versioned plan; v1 requests and previously saved plans retain their identities
+and hard-cut behavior. Exact processing does not establish a natural musical
+transition or listening approval.
+
+## Mark the completed arrangement and continue editing
+
+Request new annotations only after the arrangement's audio has completed.
+For example, save this as `arrangement-marks.json`:
+
+```json
+{
+  "schema": "score-music-annotate-arrangement/v1",
+  "request_id": "arrangement-marks-001",
+  "plan_id": "ARRANGEMENT_PLAN_ASSET_ID",
+  "source": "agent",
+  "regions": [
+    {
+      "id": "theme-second-body",
+      "segment_id": "theme",
+      "repeat_index": 1,
+      "range": "body"
+    },
+    {
+      "id": "outro-full",
+      "segment_id": "ending",
+      "repeat_index": 0,
+      "range": "full"
+    }
+  ]
+}
+```
+
+```text
+python <skill-dir>/scripts/run_audio.py --product score -- music annotate-arrangement --request arrangement-marks.json
+python <skill-dir>/scripts/run_audio.py --product score -- music show <new-annotation-asset-id>
+```
+
+Replace the plan ID and segment names with exact saved values. `source` describes
+who supplies these new labels; do not represent agent-created labels as user
+feedback. Each request selects 1–128 distinct occurrences with unique region IDs.
+Larger arrangements can be marked in separate explicit requests. `full` includes
+the entire output interval of that occurrence, including any blended neighbors.
+`body` excludes its complete incoming and outgoing overlaps. An empty body is
+rejected. In a v1 arrangement the two choices name the same interval.
+
+This command verifies the saved plan, completed action and exact output audio,
+then publishes new metadata without rendering audio or changing any session.
+Missing or interrupted execution must be handled through the existing action
+workflow, never by silently running it from the annotation command. The new
+annotation retains provenance and source-to-output mapping and uses frame
+coordinates with unknown musical timing. Do not copy a source BPM/grid or PCM
+lock onto the new timeline.
+
+The new annotation is usable by existing `music plan` and `music arrange`.
+For a complete continued-editing workflow:
+
+1. Register the existing candidates and annotate their source regions.
+2. Plan the sequence and explicit transitions, inspect it, and execute it.
+3. Mark the completed output's requested occurrences using `full` or `body`.
+4. Create a new session and explicitly select that output using its observed
+   revision. Establish new locks only for the user's preservation requirements.
+5. Plan a named-region splice on the new annotation with that protection
+   reference and an equal-frame replacement; inspect and execute it. Full-range
+   edits include mixed transitions, whereas body-range edits leave them outside
+   the write window. Verify the promised unchanged PCM and retained locks.
+6. Explicitly select the accepted candidate, then export the exact selected
+   version. Record any actual listening feedback separately when it occurs.
+
+Re-read context before session mutations. A changed selection or lock policy is
+not permission to drop preservation requirements. This workflow does not transfer
+assets or state between the Sonic, Score and standalone Core workspaces.

@@ -216,7 +216,7 @@ class SkillLauncherTests(unittest.TestCase):
                     self.plan(command=[*context, option])
 
     def test_music_requests_use_caller_paths_and_asset_ids_remain_identifiers(self):
-        for command in ('annotate', 'plan', 'arrange'):
+        for command in ('annotate', 'plan', 'arrange', 'annotate-arrangement'):
             for option in (['--request', 'music.json'], ['--r=music.json']):
                 with self.subTest(command=command, option=option):
                     argv = self.plan(product='score', command=['music', '--json', command, *option])['argv']
@@ -232,7 +232,7 @@ class SkillLauncherTests(unittest.TestCase):
         source = self.root / 'music-files'
         source.mkdir()
         self.link_directory(self.nested / 'linked', source)
-        for command in ('annotate', 'plan', 'arrange'):
+        for command in ('annotate', 'plan', 'arrange', 'annotate-arrangement'):
             with self.subTest(command=command):
                 with self.assertRaisesRegex(ValueError, 'Reparse points and symlinks'):
                     self.plan(command=['music', command, '--r=linked/music.json'])

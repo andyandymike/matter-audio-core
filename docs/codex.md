@@ -87,8 +87,9 @@ the saved result without the original files. An interrupted claim can report
 
 Compatible ScoreMatter checkouts expose asset-bound music annotations and plans.
 Use the product's `capabilities` and `docs/shared-audio.md` for their strict request
-schemas. The launcher resolves `music annotate --request`, `music plan --request`
-and `music arrange --request` from the caller's working directory:
+schemas. The launcher resolves `music annotate --request`, `music plan --request`,
+`music arrange --request` and `music annotate-arrangement --request` from the
+caller's working directory:
 
 ```sh
 python <skill-dir>/scripts/run_audio.py --product score -- music annotate --request annotations.json
@@ -132,6 +133,30 @@ and unsupported protection/session fields are rejected. Source sessions stay
 unchanged; explicitly select the candidate and create new marks or locks as
 needed. The [ScoreMatter guide](https://andyandymike.github.io/score-matter/shared-audio/)
 includes the request schema and capacity limits.
+
+Compatible ScoreMatter versions also accept `score-music-arrange/v2` with
+explicit linear crossfades after selected occurrences. For example, only the
+second occurrence of theme A can overlap theme B; all other boundaries stay
+unchanged. The plan records the overlap ranges, shortened duration and each
+occurrence's full and unmixed body ranges. Transitions that exceed a source,
+overlap within the same occurrence or exceed Core's event capacity are rejected
+before publication. Existing v1 requests and saved plans retain their behavior.
+
+After rendering, `music annotate-arrangement --request marks.json` creates new
+named regions on that exact completed output. Choose each occurrence by segment
+ID and zero-based repeat index, and explicitly choose its `full` range or `body`.
+Full ranges include blended samples from neighbors; body ranges exclude both
+transition overlaps and must be nonempty. New marks preserve the plan and source
+mapping but declare unknown timing, without inheriting a global BPM or old locks.
+They can feed the existing trim, loop, splice, arrangement and protection plans.
+The command never renders missing audio or selects a session version.
+
+For continued editing, explicitly select the arranged candidate in a new session,
+mark its output regions, protect the regions to retain, and plan a named-region
+replacement with that protection reference. Inspect the plan, execute it, then
+select and export the chosen result using the existing revision guards. These
+steps preserve source sessions and distinguish an exported candidate from
+listening or in-game acceptance.
 
 Core 0.2 adds persistent sessions and attributed feedback. Check the installed
 CLI's `sessions` capability before using them; older product environments can
