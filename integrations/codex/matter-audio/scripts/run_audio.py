@@ -68,7 +68,7 @@ def resolve_file_arguments(command: list[str], cwd: Path) -> list[str]:
         'action': ('resolve', 'execute'), 'session': ('create', 'select', 'branch'),
         'constraints': ('set',), 'feedback': ('add',), 'job': ('submit', 'cancel', 'retry'),
         'batch': ('submit', 'retry'), 'audition': ('create',), 'export': ('create',),
-        'music': ('annotate', 'plan'),
+        'music': ('annotate', 'plan', 'arrange'),
     }
     context = tuple(result[:2])
     if len(context) == 2 and context[1] in request_commands.get(context[0], ()):

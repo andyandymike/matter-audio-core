@@ -87,8 +87,8 @@ the saved result without the original files. An interrupted claim can report
 
 Compatible ScoreMatter checkouts expose asset-bound music annotations and plans.
 Use the product's `capabilities` and `docs/shared-audio.md` for their strict request
-schemas. The launcher resolves both `music annotate --request` and
-`music plan --request` from the caller's working directory:
+schemas. The launcher resolves `music annotate --request`, `music plan --request`
+and `music arrange --request` from the caller's working directory:
 
 ```sh
 python <skill-dir>/scripts/run_audio.py --product score -- music annotate --request annotations.json
@@ -118,6 +118,20 @@ There is no implicit cropping, padding or time stretching. See the
 [ScoreMatter request example](https://andyandymike.github.io/score-matter/shared-audio/)
 for the replacement schema; inspect the plan before executing it. Engineering
 checks do not establish that the musical join sounds natural.
+
+To assemble a new structure, `music arrange --request arrangement.json` saves a
+separate plan with an ordered list of named source regions and explicit integer
+repeat counts. Use `music show` to inspect it and `music execute` to render it.
+The plan records each region's exact annotation/audio version and every
+occurrence's output interval, with a total duration calculated from actual
+frames. Core's existing `scene/v1` renders consecutive copies without implicit
+padding, trimming, level changes or transitions. All sources must share a sample
+rate and channel count. Different source grids do not become a global BPM map.
+The result has a new timeline: old annotations and PCM locks are not inherited,
+and unsupported protection/session fields are rejected. Source sessions stay
+unchanged; explicitly select the candidate and create new marks or locks as
+needed. The [ScoreMatter guide](https://andyandymike.github.io/score-matter/shared-audio/)
+includes the request schema and capacity limits.
 
 Core 0.2 adds persistent sessions and attributed feedback. Check the installed
 CLI's `sessions` capability before using them; older product environments can

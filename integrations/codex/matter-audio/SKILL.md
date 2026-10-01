@@ -94,6 +94,12 @@ For named-section replacement, bind the base and replacement annotations and
 check their complete resolved frame lengths, sample rates and channels. Use the
 installed splice plan schema; equal bar counts alone do not establish equal
 duration. Keep transitions inside the editable region and preserve base locks.
+For a new sequential structure, use `music arrange` with ordered named regions
+and explicit integer repetitions, then inspect and execute its saved plan.
+Report the actual total length and each occurrence's output range. This creates
+a new timeline; it does not transfer old musical grids, annotations or PCM locks.
+Do not bypass a required preservation policy through arrangement: protection
+parameters are unsupported, and source sessions must remain unchanged.
 
 Explain the intended preservation, change, operation and listening focus briefly.
 Use actual returned asset IDs, frame counts, digests and measurements. Present

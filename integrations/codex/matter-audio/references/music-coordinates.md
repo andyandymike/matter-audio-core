@@ -113,6 +113,74 @@ include Core's actual change and transition evidence. The replacement asset is
 an input, not a new current selection. Results retain both annotation references,
 but neither source annotation is automatically attached to the new audio.
 
+## Assemble a new sequential structure
+
+When music capabilities expose `arrange`, use existing named source regions to
+build an ordered sequence. For example, intro, theme twice, then outro:
+
+```json
+{
+  "schema": "score-music-arrange/v1",
+  "request_id": "intro-theme-outro-001",
+  "segments": [
+    {
+      "id": "opening",
+      "annotation_id": "INTRO_ANNOTATION_ID",
+      "region_id": "intro",
+      "repeat": 1
+    },
+    {
+      "id": "theme",
+      "annotation_id": "THEME_ANNOTATION_ID",
+      "region_id": "theme",
+      "repeat": 2
+    },
+    {
+      "id": "ending",
+      "annotation_id": "OUTRO_ANNOTATION_ID",
+      "region_id": "outro",
+      "repeat": 1
+    }
+  ]
+}
+```
+
+Substitute actual annotation IDs; several segments can use the same annotation
+or source audio. Segment IDs must be distinct, and each segment explicitly names
+its positive integer repeat count.
+
+```text
+python <skill-dir>/scripts/run_audio.py --product score -- music arrange --request arrangement.json
+python <skill-dir>/scripts/run_audio.py --product score -- music show <plan-asset-id>
+python <skill-dir>/scripts/run_audio.py --product score -- music execute <plan-asset-id>
+```
+
+`arrange` only publishes a plan. It freezes all source annotations, exact audio
+identities, complete source regions and a `scene/v1` request. The expanded
+timeline records every occurrence's segment reference, zero-based repeat index
+and output start/end frames. Use the referenced segment's saved source range and
+coordinate errors to inspect the mapping. Equal audio bytes with different asset
+IDs remain distinct inputs. Repetition uses actual source frames, including a
+previously constructed loop's shortened period if that output is the source.
+
+The first segment starts at output frame zero. Each occurrence follows the
+previous one without gaps or overlap; total duration is the sum of the actual
+source lengths times their repeat counts. No level adjustment, implicit fade,
+crossfade, padding, tempo fitting or resampling is applied. Sample rate and
+channels must match. A sequence can use free-time regions or different source
+grids, but this does not establish one global beat grid or a natural musical join.
+
+Check installed limits before planning a large sequence. Unsupported fields,
+format mismatches and capacity excesses fail before publication. Changed order,
+repetitions or source identities require a new request ID. Completed requests
+replay their saved receipts; interrupted claims stay `recovery_pending`.
+
+This output has a new timeline. Source annotations and PCM locks are not
+inherited, and protection/session parameters are explicitly unsupported rather
+than ignored. Do not use arrangement to bypass a user's preservation requirement.
+Source audio, sessions and feedback remain unchanged. The new WAV is a candidate;
+select it explicitly and establish new annotations or protection where needed.
+
 This route does not infer beats, stretch time, follow variable tempo, inherit
 themes, judge loop naturalness or approve musical quality. Respect deferred
 listening and keep structural validation separate from listening evidence.

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Codex launcher and authoring guidance for ScoreMatter sequential music
+  arrangements, with explicit repetitions and a saved source-to-output timeline.
 - Codex guidance for ScoreMatter named-section replacement, binding both source
   annotations and equal frame ranges to the existing protected splice operation.
 - Codex support for ScoreMatter music annotation and planning requests, with
