@@ -18,7 +18,7 @@ Use each product's pinned requirements and installation instructions:
 - [ScoreMatter shared audio](https://andyandymike.github.io/score-matter/shared-audio/)
   uses `requirements-audio.txt` and the optional `audio` extra.
 
-The current adapters require core 0.6.0 and build from its reviewed immutable
+The current adapters require core 0.6.1 and build from its reviewed immutable
 commit. Run the product's `tools/check_shared_audio.py` to verify installation,
 adapter behavior and exact exports without invoking an audio model.
 

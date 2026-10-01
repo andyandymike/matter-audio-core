@@ -157,6 +157,14 @@ resume context, with unfinished jobs first and a continuation query. See [jobs](
 
 ## Persistence and retries
 
+Python adapters can read one exact historical revision with
+`SessionService(store).revision(session_id, revision)`. The returned record has
+the same fields as a session history entry, including `selected_asset` and
+`constraints`. Core verifies that revision's asset snapshot and protected PCM
+before returning it. An empty revision returns `selected_asset: null`.
+The query does not select audio, append history or depend on the current head;
+adapters do not need to inspect SQLite rows or private service methods.
+
 The workspace contains `sessions.sqlite3` alongside the existing asset store.
 It is the authority for session heads, immutable revisions, feedback and
 state-mutation receipts. JSON responses are views/receipts, not a second editable

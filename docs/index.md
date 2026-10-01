@@ -6,7 +6,7 @@ hide:
 
 <section class="ma-hero">
   <div class="ma-hero__copy">
-    <p class="ma-eyebrow">MATTER AUDIO CORE · 0.6.0</p>
+    <p class="ma-eyebrow">MATTER AUDIO CORE · 0.6.1</p>
     <h1>Edit audio.<br><span>Keep the original.</span></h1>
     <p class="ma-lede">Local audio tools for developers and coding agents. Shape a sound, protect the parts that matter, and keep an exact record of every result.</p>
     <div class="ma-actions">
@@ -80,7 +80,7 @@ Use the standalone CLI for local WAV editing, or enter through a product adapter
 [Use from Codex](codex.md){ .md-button }
 
 !!! note "Early development, clear boundaries"
-    Core 0.6.0 works with PCM16 WAV. Model weights and hosted generation services
+    Core 0.6.1 works with PCM16 WAV. Model weights and hosted generation services
     are not bundled. RMS matching is not LUFS, feature distance is not semantic
     understanding, and a passing measurement is not a listening verdict.
     [Read the validation boundaries](validation.md).

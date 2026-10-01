@@ -8,7 +8,7 @@ from collections import Counter
 from contextlib import ExitStack
 
 from .actions import ActionService, Registry
-from .contracts import canonical, fingerprint, validate
+from .contracts import MAX_JSON_BYTES, canonical, fingerprint, validate
 from .errors import AudioError
 from .execution import checkpoints, job_lock
 from .job_contracts import MUTATIONS
@@ -79,9 +79,12 @@ class JobService:
 
     @staticmethod
     def _insert_attempt(connection, job_id, number, resolution):
+        encoded = canonical(resolution)
+        if len(encoded) > MAX_JSON_BYTES:
+            raise AudioError("resolution_too_large", "Managed resolution exceeds the 1 MiB JSON limit")
         connection.execute("""INSERT INTO job_attempts
             (job_id, attempt, action_request_id, resolution_json, state) VALUES (?, ?, ?, ?, 'queued')""",
-                           (job_id, number, resolution["request"]["request_id"], canonical(resolution).decode()))
+                           (job_id, number, resolution["request"]["request_id"], encoded.decode()))
 
     def _submit(self, connection, session_id, spec, resolution):
         session = self.sessions._session(connection, session_id)

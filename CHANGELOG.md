@@ -1,6 +1,15 @@
 # Changelog
 
-## Unreleased
+## 0.6.1 — 2026-10-01
+
+- Concurrent first use of a workspace now shares one complete ownership marker
+  while continuing to reject unrelated directories and other products.
+- Complete publication size checks prevent extension operations from saving
+  results that exceed the reader's JSON limit. Oversized execution results are
+  reported as readable failures rather than leaving managed jobs stuck running.
+- Public `ArtifactStore.validate_publication` and `SessionService.revision`
+  interfaces let products validate metadata publications and read verified
+  historical selections without depending on Core's storage layout.
 
 - Codex support for explicit ScoreMatter arrangement transitions and new
   output-bound section annotations, continuing through protected edits and export.

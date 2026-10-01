@@ -35,6 +35,20 @@ The built-in registry exposes `inspect/v1`, `gain/v1`, `trim/v1`, `fade/v1`,
 `mix/v1` and `splice/v1` without
 loading an adapter. Inspect its parameter schemas through `capabilities`.
 
+Core 0.6.1 also provides two Python interfaces for product metadata services:
+
+- `SessionService.revision(session_id, revision)` returns one verified historical
+  revision without reading today's selection or exposing SQLite rows.
+- `ArtifactStore.validate_publication(request_id, binding, publication, extra)`
+  validates the complete result manifest without writing files or claiming a
+  request. Metadata producers can build a `Publication("0" * 32)` preview and
+  pass the same output records and result fields they intend to publish. Core
+  owns the receipt layout and its 1 MiB limit; products do not estimate overhead.
+
+The preview runs no producer or model. `transact` independently checks the actual
+result before publication, so the preview does not replace execution validation.
+Existing assets, operation profiles and SQLite schema 4 remain compatible.
+
 ## Request lifecycle
 
 1. Import a supported WAV to snapshot the input and obtain an asset ID.

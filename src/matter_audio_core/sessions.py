@@ -91,6 +91,18 @@ class SessionService:
             raise AudioError("session_asset_changed", "Stored selection no longer matches its asset")
         return self.store.playback_refs({"outputs": [record]})
 
+    def revision(self, session_id: str, revision: int) -> dict:
+        """Read and verify one saved revision without depending on today's head."""
+        validate(session_id, IDENTIFIER)
+        validate(revision, REVISION)
+        with self.database.transaction() as connection:
+            self._session(connection, session_id)
+            result = revision_record(self._revision(connection, session_id, revision))
+        asset = result["selected_asset"]
+        self._verify_asset(asset)
+        project_constraints(self.store, result["constraints"], asset["asset_id"] if asset else None)
+        return result
+
     @staticmethod
     def _insert_revision(connection, session_id, revision, asset, reason, created_at, restored=None, constraints=None):
         connection.execute("""INSERT INTO revisions

@@ -9,17 +9,22 @@ import re
 import shutil
 import stat
 import sys
+import time
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
 from . import __version__
-from .contracts import (ASSET_PATTERN, REQUEST_PATTERN, RESULT_SCHEMA, canonical,
+from .contracts import (ASSET_PATTERN, MAX_JSON_BYTES, REQUEST_PATTERN, RESULT_SCHEMA, canonical,
                         digest, fingerprint, read_json, validate)
 from .errors import AudioError
 from .execution import execution_records, summarize_execution
 from .media import MAX_AUDIO_BYTES, decode_wav
+
+
+_PUBLICATION_FAILURE = {"error": {"code": "publication_too_large",
+    "message": "Complete result exceeds the 1 MiB JSON limit", "details": {}}, "findings": []}
 
 
 def safe_path(path: Path) -> Path:
@@ -110,16 +115,30 @@ class ArtifactStore:
     def _workspace(self, *, create: bool = False) -> None:
         safe_path(self.root)
         if not self.root.exists() and create:
-            self.root.mkdir(parents=True)
+            self.root.mkdir(parents=True, exist_ok=True)
         marker = self.root / "workspace.json"
         if not marker.exists():
             if not create:
                 raise AudioError("workspace_missing", f"No workspace at {self.root}")
-            if any(self.root.iterdir()):
+            if any(self.root.iterdir()) and not marker.exists():
                 raise AudioError("workspace_unrecognized", "Refusing to initialize a nonempty directory")
-            _write(marker, canonical({"schema": "matter-workspace/v1", "product": self.product}))
-        safe_path(marker)
-        if read_json(marker) != {"schema": "matter-workspace/v1", "product": self.product}:
+            try:
+                _write(marker, canonical({"schema": "matter-workspace/v1", "product": self.product}))
+            except FileExistsError:
+                pass  # Another initializer owns the exclusive marker write.
+        deadline = time.monotonic() + 1
+        while True:
+            try:
+                identity = read_json(safe_path(marker))
+                break
+            except AudioError as exc:
+                # A competing writer may have created the file but not finished
+                # its small JSON write. Interrupted/corrupt markers still fail
+                # closed after a bounded wait; they are never replaced/reclaimed.
+                if exc.code != "invalid_json" or time.monotonic() >= deadline:
+                    raise
+                time.sleep(.01)
+        if identity != {"schema": "matter-workspace/v1", "product": self.product}:
             raise AudioError("workspace_mismatch", "Workspace belongs to a different product or schema")
         for name in ("objects", "requests", ".staging"):
             folder = safe_path(self.root / name)
@@ -208,19 +227,48 @@ class ArtifactStore:
             events.append(document["event"])
         return summarize_execution(events)
 
+    def validate_publication(self, request_id: str, binding: dict, publication: Publication,
+                             extra: dict, *, status: str = "succeeded", events=()) -> dict:
+        """Build and size-check the exact persisted result without filesystem I/O.
+
+        Adapters may populate a Publication with a placeholder 32-character group
+        ID to preflight their real producer's outputs and metadata. This checks
+        the complete manifest, including binding, records and execution evidence;
+        it does not publish files or execute/validate an audio operation.
+        """
+        validate(request_id, {"type": "string", "pattern": REQUEST_PATTERN})
+        result = {"schema": RESULT_SCHEMA, "group_id": publication.group_id, "request_id": request_id,
+                  "core_version": __version__, "product": self.product, "status": status,
+                  "binding_digest": fingerprint(binding), "binding": binding,
+                  "audio_model_calls": 0, "outputs": publication.outputs,
+                  **extra, **summarize_execution(list(events))}
+        if len(canonical(result)) > MAX_JSON_BYTES:
+            raise AudioError(**_PUBLICATION_FAILURE["error"])
+        return result
+
     def transact(self, request_id: str, binding: dict, producer: Callable[[Publication], dict]) -> dict:
         self._workspace(create=True)
         target = self._request_path(request_id)
         binding_digest = fingerprint(binding)
-        group_id = uuid.uuid4().hex
-        claim = {"request_id": request_id, "binding_digest": binding_digest, "group_id": group_id}
-        try:
-            self._publish(target, {"claim.json": canonical(claim)})
-        except FileExistsError:
+
+        def previous_result():
             previous = read_json(target / "claim.json")
             if previous["binding_digest"] != binding_digest:
                 raise AudioError("request_conflict", "Request ID already binds different inputs or parameters")
             return self.show_request(request_id)
+
+        if target.exists():
+            return previous_result()
+        group_id = uuid.uuid4().hex
+        # Even a failed producer must leave a readable immutable receipt. Reject
+        # a binding that cannot fit that receipt before taking the request claim.
+        self.validate_publication(request_id, binding, Publication(group_id),
+                                  _PUBLICATION_FAILURE, status="failed")
+        claim = {"request_id": request_id, "binding_digest": binding_digest, "group_id": group_id}
+        try:
+            self._publish(target, {"claim.json": canonical(claim)})
+        except FileExistsError:
+            return previous_result()
         publication = Publication(group_id)
         events = []
 
@@ -229,6 +277,12 @@ class ArtifactStore:
                 raise AudioError("execution_limit", "Execution journal exceeds its event limit")
             document = {"schema": "matter-execution-event/v1", "claim": claim,
                         "sequence": len(events), "event": event}
+            if len(canonical(document)) > MAX_JSON_BYTES:
+                raise AudioError("execution_limit", "Execution event exceeds the 1 MiB JSON limit")
+            # Keep all recorded launch evidence in the fallback receipt, including
+            # uncertain launches. Never trim evidence into a false zero-call claim.
+            self.validate_publication(request_id, binding, Publication(group_id),
+                                      _PUBLICATION_FAILURE, status="failed", events=[*events, event])
             self._publish(target / f"execution-{len(events):04d}", {
                 "event.json": canonical(document), "event.sha256": fingerprint(document)["hex"].encode("ascii")})
             events.append(event)
@@ -240,10 +294,15 @@ class ArtifactStore:
         except AudioError as exc:
             publication = Publication(group_id)
             extra, status = {"error": exc.document(), "findings": []}, "failed"
-        result = {"schema": RESULT_SCHEMA, "group_id": group_id, "request_id": request_id,
-                  "core_version": __version__, "product": self.product, "status": status,
-                  "binding_digest": binding_digest, "binding": binding,
-                  "audio_model_calls": 0, "outputs": publication.outputs, **extra, **summarize_execution(events)}
+        try:
+            result = self.validate_publication(request_id, binding, publication, extra,
+                                               status=status, events=events)
+        except AudioError as exc:
+            if exc.code != "publication_too_large":
+                raise
+            publication = Publication(group_id)
+            result = self.validate_publication(request_id, binding, publication,
+                                               _PUBLICATION_FAILURE, status="failed", events=events)
         self._publish(self.root / "objects" / group_id, {
             **publication.files, "manifest.json": canonical(result),
             "manifest.sha256": fingerprint(result)["hex"].encode("ascii"),

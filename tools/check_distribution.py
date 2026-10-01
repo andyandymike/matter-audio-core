@@ -75,12 +75,13 @@ def main() -> None:
         required = {"pyproject.toml", "LICENSE", "README.md", "README.zh-CN.md", "CONTRIBUTING.md",
                     "SECURITY.md", "CHANGELOG.md", "docs/architecture.md", "docs/pcm16-profile.md",
                     "docs/validation.md", "docs/codex.md", "examples/quickstart.py", "tests/test_core.py",
-                    "docs/sessions.md", "examples/session_workflow.py", "tests/test_sessions.py",
+                    "docs/sessions.md", "examples/session_workflow.py", "tests/test_sessions.py", "tests/test_revision_api.py",
                     "integrations/codex/matter-audio/SKILL.md",
                     "integrations/codex/matter-audio/config.example.json",
                     "integrations/codex/matter-audio/scripts/run_audio.py", "tools/check_distribution.py"}
         required.add("integrations/codex/matter-audio/references/sessions.md")
         required.add("integrations/codex/matter-audio/references/music-coordinates.md")
+        required.update({"tests/test_publication.py", "tests/workspace_worker.py"})
         required.update({"docs/jobs.md", "examples/jobs_workflow.py", "tests/test_jobs.py", "tests/job_worker.py",
                          "integrations/codex/matter-audio/references/jobs.md"})
         required.update({"docs/regions.md", "examples/regions_workflow.py", "tests/test_regions.py",

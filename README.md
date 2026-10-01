@@ -17,7 +17,7 @@ ScoreMatter adapters. It does not require a GPU, model weights, API keys or an
 audio generation service. The optional [Codex integration](docs/codex.md) uses
 the standalone core or configured product CLIs.
 
-**Status:** `0.6.0`, early development. Windows and Linux, Python 3.10+ with
+**Status:** `0.6.1`, early development. Windows and Linux, Python 3.10+ with
 standard-library SQLite support. Persistent sessions now include managed jobs,
 explicit crash recovery, partial batch retries and cooperative CPU cancellation.
 PCM region locks preserve exact samples through continuous edits. A local

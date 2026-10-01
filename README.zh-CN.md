@@ -11,7 +11,7 @@ CLI 返回 JSON 和 WAV 路径，本地比较页可保存选择、反馈并导�
 核心可独立使用，也可供 SonicMatter 和 ScoreMatter 共用。确定性操作无需 GPU、
 模型权重或 API key。[Codex 入口](docs/codex.md)通过配置好的产品 CLI 调用。
 
-当前版本为 **0.6.0，早期开发阶段**。面向 Windows / Linux、带标准库 SQLite 的 Python 3.10+。
+当前版本为 **0.6.1，早期开发阶段**。面向 Windows / Linux、带标准库 SQLite 的 Python 3.10+。
 持久会话已加入托管任务、显式中断恢复、批次失败项重试与 CPU 协作取消。
 PCM 区域锁支持在连续裁剪和淡入淡出中逐帧保留指定片段。
 可选产品适配器可接入本地模型编辑，支持进程树取消和调用记录；核心包不包含模型与权重。
