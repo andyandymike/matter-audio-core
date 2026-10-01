@@ -78,6 +78,12 @@ def resolve_file_arguments(command: list[str], cwd: Path) -> list[str]:
         options = ('--request-id', '--help')
     elif context == ('audition', 'serve'):
         options = ('--ready-file', '--port', '--help')
+    elif context == ('recordings', 'list'):
+        options = ('--manifest', '--help')
+    elif context == ('recordings', 'import'):
+        options = ('--manifest', '--request-id', '--help')
+    elif context == ('candidate', 'register'):
+        options = ('--audio', '--generation-record', '--intent', '--request-id', '--help')
     else:
         return result  # e.g. constraints show --r means --revision, not a file.
 
@@ -94,7 +100,7 @@ def resolve_file_arguments(command: list[str], cwd: Path) -> list[str]:
         if name is not None:
             _, separator, value = token.partition('=')
             result[index] = name + separator + value
-            if name in ('--request', '--ready-file'):
+            if name in ('--request', '--ready-file', '--manifest', '--audio', '--generation-record', '--intent'):
                 if separator:
                     result[index] = name + '=' + absolute(value)
                 else:

@@ -46,6 +46,8 @@ or escaped backslashes. Product paths remain explicit configuration.
 
 Relative `assets import`, `--request` and `--ready-file` CLI paths are resolved
 against the caller's working directory before entering the product checkout.
+The same applies to Sonic `recordings list/import --manifest` and Score
+`candidate register --audio/--generation-record/--intent` in compatible products.
 Paths inside request JSON follow the operation schema; use explicit absolute
 paths when the schema accepts file locations.
 
@@ -53,6 +55,35 @@ For SonicMatter, an in-repository workspace must satisfy that product's
 authoring safeguards (under its `artifacts` tree with `.gdignore`); an explicit
 workspace outside the product checkout is another option. Use separate
 workspaces for the two products.
+
+## Register project inputs
+
+Check the configured product's `capabilities` first. Compatible SonicMatter
+checkouts can import project PCM16 WAV recordings from an explicit manifest;
+ScoreMatter can register an existing candidate with its optional generation
+record and music intent:
+
+```sh
+python <skill-dir>/scripts/run_audio.py --product sonic -- recordings list --manifest recordings.json
+python <skill-dir>/scripts/run_audio.py --product sonic -- recordings import paper-01 --manifest recordings.json --request-id register-paper-01
+python <skill-dir>/scripts/run_audio.py --product score -- candidate register --audio candidate.wav --generation-record candidate.generation.json --intent intent.json --request-id register-music-01
+```
+
+Use the product's `docs/shared-audio.md` for the exact manifest and intent schema.
+Sonic requires explicit local-preview permission with a declared evidence reference;
+this is not independent rights verification or publication approval. Score checks
+the record's output hash and media facts against the supplied WAV; historical
+generation declarations remain unverified. Both retain original bytes and register
+immutable assets without model execution, playback or automatic session selection.
+Use the returned audio asset ID in an explicit `session create` or revision-guarded
+`session select`, then continue with existing editing, comparison and export commands.
+
+Retry the same registration with the same request ID and unchanged inputs. Changed
+inputs under that ID conflict. After success, `action show <request-id>` retrieves
+the saved result without the original files. An interrupted claim can report
+`recovery_pending`; do not hide it by registering under a new ID.
+
+## Continue shared authoring
 
 Core 0.2 adds persistent sessions and attributed feedback. Check the installed
 CLI's `sessions` capability before using them; older product environments can

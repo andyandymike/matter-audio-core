@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Codex launcher support for Sonic project-recording manifests and Score
+  candidate audio, generation records and intent files, resolved from the caller.
 - Project-scoped Codex launcher workspaces, explicit reuse of legacy configured
   workspaces, and dry-run plans that keep consuming projects separate from tools.
 - Caller-relative import/request/output paths, including shared CLI JSON flags

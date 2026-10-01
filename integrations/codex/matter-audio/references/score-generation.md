@@ -31,3 +31,23 @@ Keep `--timeout-seconds` within the task's compute allowance. The product times 
 Model execution remains offline and runs only for the requested candidate set. Model components and tool caches remain machine resources; project output and prompt records stay at the resolved project locations. Old records in the product checkout are not moved automatically. Never delete weights as a side effect of skill use.
 
 After successful generation, inspect the exact WAV and return its playable path. Import it into a chosen shared audio workspace only when that continued editing/comparison work is requested, using the returned asset IDs thereafter. Keep raw output intact and create separately named derivatives. Follow [BGM authoring](bgm-authoring.md) for musical comparison, scoped feedback and loop audition; game playback still needs its real consumer and listening evidence.
+
+When the installed product exposes `candidate register`, preserve the generation
+record alongside the audio in that workspace:
+
+```text
+python <skill-dir>/scripts/run_audio.py --product score -- candidate register --audio <candidate.wav> --generation-record <record.json> --intent <intent.json> --request-id <registration-id>
+```
+
+The record and intent arguments are optional. Use the actual returned record
+path; if native generation reported a record warning, retain the WAV and omit
+the missing record rather than inventing one or generating again. The small
+`score-music-intent/v1` schema is documented in ScoreMatter's `docs/shared-audio.md`;
+it records direction, not user listening feedback or a musical guarantee.
+Registration checks the record's output hash and media facts, preserving the
+original WAV and supplied JSON bytes. It does not verify past inference or the
+model components. Use the returned audio asset ID for explicit session creation
+or selection with the current revision. Query `action show <registration-id>` to
+retrieve a completed registration without its original input files. Generation
+and registration are separate operations: registration errors never require
+regeneration, and `recovery_pending` is not permission to create a new attempt.

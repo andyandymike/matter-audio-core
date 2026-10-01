@@ -26,7 +26,9 @@ own checkout requires `artifacts/.gdignore`; preserve that product's boundary.
 
 The launcher resolves relative `assets import` paths, `--request` files and
 `--ready-file` outputs against the caller's working directory before entering
-the tool checkout. Paths stored inside request JSON still follow that operation's
+the tool checkout. It also resolves Sonic `recordings list/import --manifest`
+and Score `candidate register --audio/--generation-record/--intent` file options.
+Paths stored inside request JSON still follow that operation's
 schema; use explicit absolute file paths where the schema accepts them.
 
 For BGM direction, prompt/seed comparisons, musical revisions or listening feedback,
@@ -68,6 +70,18 @@ and compressed source outputs are provenance snapshots. Sonic also exposes
 `sonic.recording_condition/v1`: start frame, frame count, fade-in/out frames and
 Q15 gain. It preserves the existing Sonic processing algorithm. See the selected
 product's `docs/shared-audio.md` when preparing that operation.
+
+For the user's own Sonic PCM16 WAV recordings, check `capabilities` for
+`recordings list/import`, then use an explicit project manifest with source,
+hash, size and purpose-specific rights declarations. Import requires declared
+local-preview permission and evidence; never invent permission or treat it as
+independent rights verification. The imported WAV retains its original bytes.
+For an existing Score candidate, use `candidate register --audio <wav>` with
+optional `--generation-record <record.json>` and `--intent <intent.json>` to
+retain provenance and project intent. Use the product's published schemas.
+Registration runs no model and does not establish listening approval, select a
+session version or grant publication rights. Choose its returned audio asset ID
+explicitly in the existing session flow.
 
 Explain the intended preservation, change, operation and listening focus briefly.
 Use actual returned asset IDs, frame counts, digests and measurements. Present

@@ -184,6 +184,37 @@ class SkillLauncherTests(unittest.TestCase):
                 self.assertEqual(argv[2:], command)
                 self.assertEqual(build_parser('core').parse_args(argv).revision, 1)
 
+    def test_product_ingestion_files_resolve_from_caller_with_json_and_abbreviations(self):
+        cases = (
+            ('sonic', ['recordings', 'list', '--m=recordings.json'],
+             ['recordings', 'list', '--manifest=' + str(self.nested / 'recordings.json')]),
+            ('sonic', ['recordings', '--json', 'import', 'paper-01', '--m', 'recordings.json', '--r', 'registration'],
+             ['recordings', 'import', 'paper-01', '--manifest', str(self.nested / 'recordings.json'), '--request-id', 'registration']),
+            ('score', ['candidate', 'register', '--a', 'candidate.wav', '--g=record.json', '--i', 'intent.json', '--r=registration'],
+             ['candidate', 'register', '--audio', str(self.nested / 'candidate.wav'), '--generation-record=' + str(self.nested / 'record.json'), '--intent', str(self.nested / 'intent.json'), '--request-id=registration']),
+        )
+        for product, command, expected in cases:
+            with self.subTest(product=product, command=command):
+                argv = self.plan(product=product, command=command)['argv']
+                self.assertEqual(argv[argv.index('--workspace') + 2:], expected)
+
+    def test_product_ingestion_files_reject_links_and_missing_values(self):
+        shared = self.root / 'source-files'
+        shared.mkdir()
+        self.link_directory(self.nested / 'linked', shared)
+        for context, option in ((['recordings', 'list'], '--manifest'),
+                                (['recordings', 'import', 'one'], '--manifest'),
+                                (['candidate', 'register'], '--audio'),
+                                (['candidate', 'register'], '--generation-record'),
+                                (['candidate', 'register'], '--intent')):
+            with self.subTest(context=context, option=option):
+                with self.assertRaisesRegex(ValueError, 'Reparse points and symlinks'):
+                    self.plan(command=[*context, option + '=linked/file'])
+                with self.assertRaisesRegex(ValueError, 'requires a file path'):
+                    self.plan(command=[*context, option, '--help'])
+                with self.assertRaisesRegex(ValueError, 'requires a file path'):
+                    self.plan(command=[*context, option])
+
     def test_forwarded_workspace_and_unknown_leading_options_fail_explicitly(self):
         for option in (['--workspace', str(self.root / 'bypass')],
                        ['--w=' + str(self.root / 'bypass')]):
