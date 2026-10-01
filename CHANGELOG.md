@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Project-scoped Codex launcher workspaces, explicit reuse of legacy configured
+  workspaces, and dry-run plans that keep consuming projects separate from tools.
+- Caller-relative import/request/output paths, including shared CLI JSON flags
+  and option abbreviations, with linked-path rejection before canonicalization.
+- A native ScoreMatter BGM launcher with no-generation preflight, project-local
+  WAVs and provenance records, and explicit timeout/retry guidance.
+- BGM direction, controlled comparisons and exact-version listening guidance in
+  the shared skill, with project-specific musical preferences kept in the project.
 - Public GitHub Pages documentation with a getting-started guide, product
   integration notes, Chinese overview and light/dark responsive navigation.
 - Documentation CI, an aggregate release check, CODEOWNERS and documented

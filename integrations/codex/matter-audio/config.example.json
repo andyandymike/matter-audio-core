@@ -1,17 +1,15 @@
 {
   "core": {
     "python": "/absolute/path/to/matter-audio-core/.venv/bin/python",
-    "root": "/absolute/path/to/matter-audio-core",
-    "workspace": "/absolute/path/to/audio-workspaces/core"
+    "root": "/absolute/path/to/matter-audio-core"
   },
   "score": {
     "python": "/absolute/path/to/score-matter/.venv/bin/python",
     "root": "/absolute/path/to/score-matter",
-    "workspace": "/absolute/path/to/audio-workspaces/score"
+    "sa3_runtime_root": "/absolute/path/to/stable-audio-3/optimized/tflite"
   },
   "sonic": {
     "python": "/absolute/path/to/sonic-matter/.venv/bin/python",
-    "root": "/absolute/path/to/sonic-matter",
-    "workspace": "/absolute/path/to/audio-workspaces/sonic"
+    "root": "/absolute/path/to/sonic-matter"
   }
 }

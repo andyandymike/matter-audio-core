@@ -1,13 +1,47 @@
 ---
 name: matter-audio
-description: Use Matter Audio Core, SonicMatter or ScoreMatter for local audio editing, loops, scene timelines, cue sets, measured search, PCM protection, comparison and export. Use registered recordings through SonicMatter and configured local SA3 edits through ScoreMatter. Game integration is separate.
+description: Create and refine BGM with configured local ScoreMatter generation, or use Matter Audio Core, SonicMatter and ScoreMatter for audio editing, loops, scene timelines, cue sets, comparison and export. Preserve exact versions, project-scoped musical intent and listening feedback. Game integration is separate.
 ---
 
 # Matter audio authoring
 
 Use the configured product CLI through `scripts/run_audio.py`. The sibling
-`config.local.json` supplies the local interpreter, product checkout and audio
-workspace. Keep that machine-local file separate from shared skill source.
+`config.local.json` supplies the local interpreter and product checkout. Keep that
+machine-local file separate from shared skill source. Resolve the script from this
+skill's installed directory, independently of the consuming project.
+
+Audio state defaults to `<project-root>/artifacts/matter-audio/<product>`. The
+project root is the current Git root, or the current working directory outside
+Git; use `--project-root <absolute-project-dir>` when the intended project differs.
+Resolve this before launching: the configured product checkout is a tool location,
+not the consuming project's state directory. `--dry-run` prints the resolved
+workspace and command without creating files or calling the product.
+
+Use `--workspace <absolute-path>` for an existing session/asset workspace or a
+user-selected output location. Do not infer that assets or feedback transfer to a
+new workspace. A legacy `workspace` in machine config is used only with explicit
+`--use-configured-workspace`; it is never a silent cross-project default.
+In a Godot project keep generated audio in an ignored artifact tree. SonicMatter's
+own checkout requires `artifacts/.gdignore`; preserve that product's boundary.
+
+The launcher resolves relative `assets import` paths, `--request` files and
+`--ready-file` outputs against the caller's working directory before entering
+the tool checkout. Paths stored inside request JSON still follow that operation's
+schema; use explicit absolute file paths where the schema accepts them.
+
+For BGM direction, prompt/seed comparisons, musical revisions or listening feedback,
+read [BGM authoring](references/bgm-authoring.md). Resolve the consuming project
+first and read only its optional `.agents/skill-context/matter-audio.md`; paths
+in that adapter resolve from the project root. Without an adapter, use the
+current brief and exact selected audio. Keep style memories, cue choices and
+feedback in that project, never in the shared skill or another project's records.
+
+Text-to-audio uses the separate [ScoreMatter generation route](references/score-generation.md)
+through `scripts/run_bgm.py`. It launches the installed product's native
+`generate` command; it is not a shared audio action or job. The helper keeps
+both WAVs and generation records with the consuming project, verifies the local
+runtime without loading weights using `--check`, and offers a child-free `--dry-run`.
+Reading this skill or preparing comparisons does not start generation.
 
 Choose `--product core` for standalone WAV authoring, `--product sonic` for
 registered recording/Foley work, or `--product score` for ScoreMatter BGM.
