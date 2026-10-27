@@ -11,11 +11,16 @@ CLI 返回 JSON 和 WAV 路径，本地比较页可保存选择、反馈并导�
 核心可独立使用，也可供 SonicMatter 和 ScoreMatter 共用。确定性操作无需 GPU、
 模型权重或 API key。[Codex 入口](docs/codex.md)通过配置好的产品 CLI 调用。
 
-当前版本为 **0.6.1，早期开发阶段**。面向 Windows / Linux、带标准库 SQLite 的 Python 3.10+。
+当前版本为 **0.7.0，早期开发阶段**。面向 Windows / Linux、带标准库 SQLite 的 Python 3.10+。
 持久会话已加入托管任务、显式中断恢复、批次失败项重试与 CPU 协作取消。
 PCM 区域锁支持在连续裁剪和淡入淡出中逐帧保留指定片段。
 可选产品适配器可接入本地模型编辑，支持进程树取消和调用记录；核心包不包含模型与权重。
 macOS 的结果发布尚未实现。
+
+0.7 新增[按帧定位信号问题](docs/quality.md)与[离线后端诊断](docs/diagnostics.md)。
+ScoreMatter 可复用已经生成的 SA3 提案重新拼接，无需再次生成。
+另提供独立安装的 MIT [转写客户端](docs/transcription.md)，连接可选外部 VoiceStudio 服务，
+保存与原始音频绑定的文本、时间戳和字幕；核心不新增模型或服务依赖。
 
 0.6 新增[成套制作能力](docs/production.md)：音频套装与变体、批量精确导出、RMS/峰值电平匹配、
 首尾交叉淡化循环、带重复事件和分层音量的场景时间轴，以及本地特征索引与检索。

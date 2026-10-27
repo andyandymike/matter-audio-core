@@ -60,6 +60,26 @@ jobs:
         run: python -m pip check
       - name: Unit tests against installed package
         run: python -m unittest discover -s tests -v
+      - name: Build optional MIT HTTP adapter
+        run: python -m build integrations/voicestudio --outdir .local/voicestudio-dist
+      - name: Verify independent adapter package contents
+        run: python tools/check_adapter_distribution.py .local/voicestudio-dist
+      - name: Install optional adapter wheel
+        shell: python
+        run: |
+          import pathlib
+          import subprocess
+          import sys
+          wheel, = pathlib.Path('.local/voicestudio-dist').glob('*.whl')
+          subprocess.run([sys.executable, '-m', 'pip', 'install', '--no-deps', str(wheel)], check=True)
+          subprocess.run([sys.executable, '-m', 'twine', 'check', '--strict', *map(str, pathlib.Path('.local/voicestudio-dist').iterdir())], check=True)
+          subprocess.run([sys.executable, '-m', 'pip', 'check'], check=True)
+      - name: Optional adapter contract tests without models
+        run: python -m unittest discover -s integrations/voicestudio/tests -v
+      - name: Offline backend diagnostic entry points
+        run: |
+          matter-audio doctor
+          matter-voicestudio doctor
       - name: Comparison controller tests without an audio device
         run: node tests/test_web.cjs
       - name: CLI example

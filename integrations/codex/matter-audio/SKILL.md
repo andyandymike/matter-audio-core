@@ -159,3 +159,11 @@ Use explicit existing assets and recipes; confirm actual operation schemas from
 the configured product. Text tags are authored metadata, numeric distance is not
 semantic understanding, and measured seam quality does not establish listening
 acceptance. Keep source eligibility and saved selection references in deliveries.
+
+Core 0.7 adds frame-localized advisory `quality` reports and offline `doctor`
+diagnostics. ScoreMatter can also reassemble an existing successful SA3 proposal
+without generating another one. Read [diagnostics, proposal reuse and transcription](references/diagnostics-and-transcription.md).
+Treat signal flags as inspection hints, not a listening verdict. The optional
+MIT transcription client connects to an independently deployed service; only
+explicit execution uploads the selected audio. Query capabilities before use,
+bind the preview digest, and preserve unknown remote outcomes without retries.

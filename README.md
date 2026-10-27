@@ -17,13 +17,19 @@ ScoreMatter adapters. It does not require a GPU, model weights, API keys or an
 audio generation service. The optional [Codex integration](docs/codex.md) uses
 the standalone core or configured product CLIs.
 
-**Status:** `0.6.1`, early development. Windows and Linux, Python 3.10+ with
+**Status:** `0.7.0`, early development. Windows and Linux, Python 3.10+ with
 standard-library SQLite support. Persistent sessions now include managed jobs,
 explicit crash recovery, partial batch retries and cooperative CPU cancellation.
 PCM region locks preserve exact samples through continuous edits. A local
 comparison page records selection/feedback and exports the exact saved WAV.
 Optional product model adapters use owned process trees and durable attempt
 records; models are not bundled. macOS publication remains unsupported.
+
+Core 0.7 adds [signal issue locations](docs/quality.md) and [offline backend
+diagnostics](docs/diagnostics.md). ScoreMatter can reuse a saved SA3 proposal
+without another generation. A separately installed MIT [transcription client](docs/transcription.md)
+connects to an optional external VoiceStudio service and saves source-bound
+transcripts and subtitles. Core itself gains no model or service dependency.
 
 Core 0.6 adds [cue packages, loops, scene timelines and local search](docs/production.md):
 versioned cue/variant sets, exact batch delivery, RMS/peak matching, overlap-loop

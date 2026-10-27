@@ -51,10 +51,13 @@ nav:
       - Layering and replacement: composition.md
       - Comparison and export: audition.md
       - Loops, scenes and cue packages: production.md
+      - Signal issue reports: quality.md
   - Integrations:
       - Codex: codex.md
       - SonicMatter and ScoreMatter: products.md
       - Local model adapters: model-adapters.md
+      - Backend diagnostics: diagnostics.md
+      - Optional transcription service: transcription.md
   - Reference:
       - Architecture: architecture.md
       - PCM16 profile: pcm16-profile.md

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=77.0.3,<82"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "matter-audio-voicestudio"
+version = "0.1.0"
+description = "Optional HTTP transcription adapter for Matter Audio workspaces."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = ["matter-audio-core>=0.7.0,<0.8"]
+
+[project.scripts]
+matter-voicestudio = "matter_audio_voicestudio.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["matter_audio_voicestudio*"]
+namespaces = false

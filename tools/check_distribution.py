@@ -93,6 +93,13 @@ def main() -> None:
         required.update({"docs/production.md", "examples/production_workflow.py",
                          "tests/test_arrangement.py", "tests/test_collections.py",
                          "integrations/codex/matter-audio/references/production.md"})
+        required.update({"docs/quality.md", "docs/diagnostics.md", "docs/transcription.md",
+                         "tests/test_quality.py", "tests/test_diagnostics.py",
+                         "integrations/codex/matter-audio/references/diagnostics-and-transcription.md",
+                         "integrations/voicestudio/pyproject.toml", "integrations/voicestudio/LICENSE",
+                         "integrations/voicestudio/README.md", "integrations/voicestudio/config.example.json",
+                         "integrations/voicestudio/tests/test_transcription.py",
+                         "integrations/voicestudio/MANIFEST.in", "tools/check_adapter_distribution.py"})
         require(required <= relative, f"Missing sdist files: {sorted(required - relative)}")
         for name, data in {"LICENSE": license_bytes, **{"src/" + k: v for k, v in {**modules, **resources}.items()}}.items():
             member = source.extractfile(f"{prefix}/{name}")

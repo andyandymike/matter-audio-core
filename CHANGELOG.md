@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.7.0 — 2026-10-27
+
+- Frame-localized advisory signal reports through `quality` and `quality/v1`,
+  with bounded scans, explicit truncation and music/speech-aware thresholds.
+  Measurements do not claim listening acceptance or automatically change audio.
+- Offline `doctor` reports share one schema across Core and product adapters,
+  distinguishing configuration checks from unknown model loading and execution devices.
+- Agent launcher and workflow guidance for ScoreMatter's reuse of a saved SA3
+  proposal, without regenerating audio or silently selecting the new result.
+- A separately installed MIT HTTP transcription client for an optional external
+  VoiceStudio service, with source-bound JSON, SRT/VTT, explicit execution,
+  durable failures and no automatic retries. No upstream application code or
+  model dependencies are included in Core.
+
 ## 0.6.1 — 2026-10-01
 
 - Concurrent first use of a workspace now shares one complete ownership marker

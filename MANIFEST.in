@@ -4,6 +4,7 @@ recursive-include docs *.md
 recursive-include docs/assets *.css *.svg
 recursive-include examples *.py
 recursive-include integrations *.md *.py *.example.json
+include integrations/voicestudio/pyproject.toml integrations/voicestudio/LICENSE integrations/voicestudio/MANIFEST.in
 recursive-include tests *.py
 recursive-include tests *.cjs
 recursive-include tools *.py
@@ -13,4 +14,6 @@ prune .venv
 prune spec
 prune planning-private
 prune workspaces
+prune integrations/voicestudio/build
+prune integrations/voicestudio/dist
 global-exclude *.py[cod] .env .env.* *.local.json *.wav *.ogg *.mp3 *.flac *.pem *.key *.sqlite* *.db *.db-*

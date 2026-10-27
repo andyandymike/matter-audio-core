@@ -29,6 +29,7 @@ def build_parser(product: str, *, allow_import: bool = True) -> Parser:
     parser.add_argument("--json", action="store_true", help="JSON is also the default output")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("capabilities")
+    commands.add_parser("doctor")
     assets = commands.add_parser("assets").add_subparsers(dest="asset_command", required=True)
     if allow_import:
         importing = assets.add_parser("import")
@@ -45,6 +46,11 @@ def build_parser(product: str, *, allow_import: bool = True) -> Parser:
     inspecting.add_argument("--offset", type=int, default=0)
     inspecting.add_argument("--limit", type=int, default=128)
     commands.add_parser("analyze").add_argument("asset_id")
+    quality = commands.add_parser("quality")
+    quality.add_argument("asset_id")
+    quality.add_argument("--profile", choices=("generic", "music", "speech"), default="generic")
+    for option in ("start-frame", "end-frame", "window-frames", "max-scan-frames", "max-warnings"):
+        quality.add_argument("--" + option, type=int)
     library = commands.add_parser("library").add_subparsers(dest="library_command", required=True)
     for name in ("create", "search"):
         library.add_parser(name).add_argument("--request", type=Path, required=True)
@@ -178,7 +184,8 @@ def job_command(args, store, registry):
 def run(argv: Sequence[str] | None = None, *, product: str = "matter-audio",
         registry: Registry | None = None, allow_import: bool = True,
         extend_parser: Callable | None = None, handle_extra: Callable | None = None,
-        prepare_workspace: Callable | None = None, capability_extra: Callable | None = None) -> int:
+        prepare_workspace: Callable | None = None, capability_extra: Callable | None = None,
+        diagnostic_extra: Callable | None = None) -> int:
     arguments = list(sys.argv[1:] if argv is None else argv)
     # Permit --json after any subcommand while retaining argparse's normal help.
     arguments = [arg for arg in arguments if arg != "--json"]
@@ -187,12 +194,14 @@ def run(argv: Sequence[str] | None = None, *, product: str = "matter-audio",
         if extend_parser:
             extend_parser(parser)
         args = parser.parse_args(arguments)
-        registry = registry or Registry()
+        if args.command != "doctor":
+            registry = registry or Registry()
         if args.command == "capabilities":
             from .audition import AUDITION_SCHEMA
             from .delivery import EXPORT_SCHEMA
             from .cue_sets import SET_SCHEMA, DELIVERY_SCHEMA
             from .library import LIBRARY_SCHEMA, SEARCH_SCHEMA
+            from .quality import QUALITY_SCHEMA
             result = {"schema": "matter-capabilities/v1", "product": product,
                       "core_version": __version__, "operations": registry.capabilities(),
                       "sessions": session_capabilities(),
@@ -202,9 +211,16 @@ def run(argv: Sequence[str] | None = None, *, product: str = "matter-audio",
                       "export": {"availability": "available", "create_schema": EXPORT_SCHEMA},
                       "cue_sets": {"availability": "available", "create_schema": SET_SCHEMA, "export_schema": DELIVERY_SCHEMA},
                       "library": {"availability": "available", "create_schema": LIBRARY_SCHEMA, "search_schema": SEARCH_SCHEMA},
+                      "quality": {"availability": "available", "parameters_schema": QUALITY_SCHEMA,
+                                  "command": "quality", "verification": "advisory_signal_checks"},
+                      "diagnostics": {"availability": "available", "command": "doctor",
+                                      "read_only": True, "network_calls": 0, "audio_model_calls": 0},
                       "limitations": ["Model editing requires an explicitly configured product backend."]}
             if capability_extra:
                 result["product_capabilities"] = capability_extra()
+        elif args.command == "doctor":
+            from .diagnostics import build_report
+            result = build_report(product, diagnostic_extra() if diagnostic_extra else [])
         else:
             if args.workspace is None:
                 raise AudioError("workspace_required", "Pass --workspace before the command")
@@ -227,6 +243,16 @@ def run(argv: Sequence[str] | None = None, *, product: str = "matter-audio",
                 record, data = store.asset(args.asset_id)
                 result = {"schema": "matter-analysis/v1", "status": "succeeded", "asset_id": record["asset_id"],
                           "digest": record["digest"], "analysis": describe(decode_wav(data)), "audio_model_calls": 0}
+            elif args.command == "quality":
+                from .quality import scan
+                from .media import decode_wav
+                record, data = store.asset(args.asset_id)
+                parameters = {name: getattr(args, name) for name in
+                    ("profile", "start_frame", "end_frame", "window_frames", "max_scan_frames", "max_warnings")
+                    if getattr(args, name) is not None}
+                result = {"schema": "matter-quality-result/v1", "status": "succeeded",
+                          "asset_id": record["asset_id"], "digest": record["digest"],
+                          "report": scan(decode_wav(data), parameters), "audio_model_calls": 0}
             elif args.command == "library":
                 from .library import LibraryService
                 library_service = LibraryService(store)

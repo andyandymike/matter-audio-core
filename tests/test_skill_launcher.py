@@ -228,6 +228,15 @@ class SkillLauncherTests(unittest.TestCase):
             argv = self.plan(product='score', command=forwarded)['argv']
             self.assertEqual(argv[argv.index('--workspace') + 2:], forwarded)
 
+    def test_proposal_plan_resolves_caller_request_and_preserves_plan_ids(self):
+        argv = self.plan(product='score', command=['proposal', 'plan', '--r=proposal.json'])['argv']
+        self.assertEqual(argv[argv.index('--workspace') + 2:],
+                         ['proposal', 'plan', '--request=' + str(self.nested / 'proposal.json')])
+        for command in ('show', 'execute'):
+            forwarded = ['proposal', command, 'a_' + 'b' * 32 + '_0']
+            argv = self.plan(product='score', command=forwarded)['argv']
+            self.assertEqual(argv[argv.index('--workspace') + 2:], forwarded)
+
     def test_music_requests_cannot_hide_linked_paths_or_missing_values(self):
         source = self.root / 'music-files'
         source.mkdir()

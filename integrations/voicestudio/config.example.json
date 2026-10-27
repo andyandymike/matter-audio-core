@@ -1,0 +1,8 @@
+{
+  "schema": "matter-voicestudio-config/v1",
+  "base_url": "http://127.0.0.1:3900",
+  "model": "whisper-1",
+  "api_key_env": "VOICESTUDIO_API_KEY",
+  "timeout_seconds": 120,
+  "service_revision": "replace-with-your-deployed-release-or-commit"
+}

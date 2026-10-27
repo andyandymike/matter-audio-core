@@ -62,6 +62,14 @@ A configured matrix is not itself evidence that every run passed.
 
 ## Product checks
 
+Core 0.7 adds synthetic frame-localization, advisory-profile, bounded-report
+and cancellation tests in `test_quality.py`, including fresh CLI publication and
+replay. `test_diagnostics.py` checks the common offline schema and guarantees
+that doctor does not construct a registry, launch subprocesses or create a
+workspace. The separately built transcription client uses loopback HTTP
+fixtures for source-bound uploads, subtitles, replay, transport failures and
+size limits; it makes no VoiceStudio deployment or real ASR accuracy claim.
+
 Core 0.6 adds `test_arrangement.py` for FFT/anti-phase stereo, silence, bounded
 normalization, loop rotation, clipping, PCM lock mapping and event timelines.
 `test_collections.py` checks saved selections, loop metadata, immutable set

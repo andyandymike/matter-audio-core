@@ -3,7 +3,7 @@
 Matter Audio Core 是供开发工具和编程代理使用的本地音频编辑核心。导入 WAV 后，
 每次编辑都生成独立资产，保留原始快照、操作参数和结果记录。
 
-当前版本为 **0.6.1**，支持 Windows、Linux 和 Python 3.10+。核心 PCM 操作不需要
+当前版本为 **0.7.0**，支持 Windows、Linux 和 Python 3.10+。核心 PCM 操作不需要
 GPU、模型权重或付费音频 API。
 
 ## 从一个可运行示例开始
@@ -36,6 +36,8 @@ python examples/quickstart.py
 | 中断恢复、取消和批处理 | [任务执行](jobs.md) |
 | 对比版本并导出 | [对比与导出](audition.md) |
 | 循环、场景、音效包和搜索 | [制作工作流](production.md) |
+| 定位信号问题、检查后端配置 | [信号报告](quality.md)、[离线诊断](diagnostics.md) |
+| 可选外部语音转写与字幕 | [转写客户端](transcription.md) |
 | 从 Codex 或两个产品进入 | [Codex](codex.md)、[产品适配](products.md) |
 
 详细工作流文档当前以英文为主；仓库还有完整的
