@@ -22,7 +22,9 @@ class DiagnosticTests(unittest.TestCase):
     def test_core_report_contains_limits_without_private_environment_data(self):
         secret = "fixture-private-key-4391"
         with patch.dict(os.environ, {"API_KEY": secret, "CUDA_VISIBLE_DEVICES": secret}), \
-                patch("platform.node", side_effect=AssertionError("No host identity query")):
+                patch("platform.node", side_effect=AssertionError("No host identity query")), \
+                patch("platform.machine", side_effect=AssertionError("No machine probe: it can spawn on Windows")), \
+                patch("platform.uname", side_effect=AssertionError("No uname probe: it can spawn on Windows")):
             result = build_report("test-product")
         self.assertEqual(result["schema"], "matter-diagnostics/v1")
         self.assertEqual(result["runtime"]["core_version"], __version__)

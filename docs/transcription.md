@@ -21,7 +21,7 @@ The source must already be registered through that product's authoring tools.
 
 Only execution uploads audio to the chosen endpoint. Preview, local doctor,
 completed-result replay and export are offline. Secrets are read from a named
-environment variable. No model is installed or selected remotely. Outputs are
+environment variable. The client does not install or preload remote models. Outputs are
 JSON and optional SRT/VTT, not modified audio, feedback, or a new selection.
 
 The adapter preserves the source digest, request identity, service declaration,

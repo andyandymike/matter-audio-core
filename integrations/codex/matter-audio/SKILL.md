@@ -9,6 +9,9 @@ Use the configured product CLI through `scripts/run_audio.py`. The sibling
 `config.local.json` supplies the local interpreter and product checkout. Keep that
 machine-local file separate from shared skill source. Resolve the script from this
 skill's installed directory, independently of the consuming project.
+For ScoreMatter, `score.sa3_runtime_root` also selects the shared audio backend
+and its doctor checks. The launcher passes it only to the Score child process;
+without that field the product keeps its existing environment/default behavior.
 
 Audio state defaults to `<project-root>/artifacts/matter-audio/<product>`. The
 project root is the current Git root, or the current working directory outside

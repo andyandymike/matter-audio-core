@@ -124,7 +124,7 @@ def build_report(product: str, backend_reports=()) -> dict:
         "summary": {"status": "attention" if affected else "ok", "attention_backends": affected},
         "runtime": {"core_version": __version__, "python_version": platform.python_version(),
                     "python_implementation": platform.python_implementation(),
-                    "platform": sys.platform, "machine": platform.machine()},
+                    "platform": sys.platform},
         "pcm": {"container": "wav", "codec": "pcm_s16le", "channels": [1, 2],
                 "sample_rate_hz": {"minimum": 8000, "maximum": 192000},
                 "max_audio_bytes": MAX_AUDIO_BYTES},

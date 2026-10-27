@@ -140,6 +140,14 @@ def resolve_plan(args, configuration, cwd: Path):
     executable, tool_root = Path(configuration['python']), Path(configuration['root'])
     if not executable.is_absolute() or not executable.is_file() or not tool_root.is_absolute() or not tool_root.is_dir():
         raise ValueError('Configuration must name an existing absolute interpreter and product checkout')
+    environment_overrides = {}
+    if args.product == 'score' and 'sa3_runtime_root' in configuration:
+        configured_runtime = configuration['sa3_runtime_root']
+        if not isinstance(configured_runtime, str) or not Path(configured_runtime).is_absolute():
+            raise ValueError('Configured score.sa3_runtime_root must be an absolute path')
+        # A missing runtime is still meaningful configuration: let the product's
+        # offline doctor describe missing components without creating anything.
+        environment_overrides['SCORE_MATTER_SA3_ROOT'] = str(Path(configured_runtime))
     consumer = project_root(args.project_root, cwd)
     if args.workspace is not None:
         workspace, source = args.workspace, 'explicit'
@@ -158,7 +166,8 @@ def resolve_plan(args, configuration, cwd: Path):
     argv = [str(executable), '-m', *module, '--workspace', str(workspace), *command]
     return {'schema': 'matter-launch-plan/v1', 'product': args.product,
             'project_root': str(consumer), 'workspace': str(workspace), 'workspace_source': source,
-            'cwd': str(tool_root.resolve()), 'argv': argv}
+            'cwd': str(tool_root.resolve()), 'argv': argv,
+            'environment_overrides': environment_overrides}
 
 
 def main():
@@ -181,6 +190,7 @@ def main():
             return 0
         environment = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1', 'PYTHONUTF8': '1'}
         environment.pop('PYTHONPATH', None)
+        environment.update(plan['environment_overrides'])
         completed = subprocess.run(plan['argv'], cwd=plan['cwd'], env=environment, timeout=args.timeout)
         return completed.returncode
     except subprocess.TimeoutExpired:

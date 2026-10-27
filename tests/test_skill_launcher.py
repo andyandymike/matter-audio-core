@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from matter_audio_core.cli import build_parser
 from matter_audio_core.media import PCM, decode_wav, encode_wav, sample_bytes
@@ -46,6 +47,36 @@ class SkillLauncherTests(unittest.TestCase):
         config.write_text(json.dumps({'core': self.config}), encoding='utf-8')
         return config
 
+    def prepare_environment_probe(self):
+        # Real child processes, but no product model runtime is present. The
+        # probe reports exactly what the selected CLI can diagnose locally.
+        probe = '''import json, os, sys
+from pathlib import Path
+runtime = os.environ.get('SCORE_MATTER_SA3_ROOT')
+print(json.dumps({'runtime': runtime, 'runtime_state':
+    'unconfigured' if runtime is None else 'present' if Path(runtime).is_dir() else 'missing',
+    'sentinel': os.environ.get('MATTER_LAUNCHER_TEST_SENTINEL'),
+    'pythonpath': os.environ.get('PYTHONPATH'), 'argv': sys.argv[1:]}))
+'''
+        for module in ('score_matter', 'matter_audio_core', 'tools'):
+            package = self.tool / module
+            package.mkdir()
+            (package / '__init__.py').write_text('', encoding='utf-8')
+            filename = 'authoring.py' if module == 'tools' else '__main__.py'
+            (package / filename).write_text(probe, encoding='utf-8')
+        config = self.root / 'config.json'
+        config.write_text(json.dumps({product: self.config for product in ('core', 'score', 'sonic')}), encoding='utf-8')
+        return config
+
+    def invoke_environment_probe(self, config, product, environment, *, dry_run=False):
+        command = [sys.executable, str(SOURCE), '--config', str(config), '--product', product]
+        if dry_run:
+            command.append('--dry-run')
+        result = subprocess.run([*command, '--', 'doctor'], cwd=self.nested, env=environment,
+                                capture_output=True, text=True, timeout=20)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        return json.loads(result.stdout)
+
     def invoke(self, config, command):
         result = subprocess.run([sys.executable, str(SOURCE), '--config', str(config),
                                  '--product', 'core', '--', *command], cwd=self.nested,
@@ -81,6 +112,74 @@ class SkillLauncherTests(unittest.TestCase):
         result=self.plan(project_root=other,product='sonic')
         self.assertEqual(Path(result['workspace']),other/'artifacts/matter-audio/sonic')
         self.assertIn('tools.authoring',result['argv'])
+
+    def test_score_runtime_configuration_is_visible_without_filesystem_or_parent_env_changes(self):
+        missing = self.root / 'missing runtime'
+        self.config['sa3_runtime_root'] = str(missing)
+        with patch.dict(os.environ, {'SCORE_MATTER_SA3_ROOT': 'ambient-value'}):
+            plan = self.plan(product='score', command=['doctor'])
+            self.assertEqual(os.environ['SCORE_MATTER_SA3_ROOT'], 'ambient-value')
+        self.assertEqual(plan['environment_overrides'], {'SCORE_MATTER_SA3_ROOT': str(missing)})
+        self.assertFalse(missing.exists())
+        self.assertFalse((self.project / 'artifacts').exists())
+
+    def test_score_runtime_must_be_absolute_but_other_products_ignore_it(self):
+        for value in ('relative/runtime', '', None, 12, True):
+            with self.subTest(value=value):
+                self.config['sa3_runtime_root'] = value
+                with self.assertRaisesRegex(ValueError, 'sa3_runtime_root must be an absolute path'):
+                    self.plan(product='score')
+                for product in ('core', 'sonic'):
+                    self.assertEqual(self.plan(product=product)['environment_overrides'], {})
+
+    def test_real_score_child_uses_configured_runtime_over_ambient_and_reports_missing_path(self):
+        runtime = self.root / 'configured runtime'
+        self.config['sa3_runtime_root'] = str(runtime)
+        config = self.prepare_environment_probe()
+        environment = {**os.environ, 'SCORE_MATTER_SA3_ROOT': str(self.root / 'ambient bait'),
+                       'MATTER_LAUNCHER_TEST_SENTINEL': 'preserved', 'PYTHONPATH': str(self.root / 'wrong modules'),
+                       'PYTHONDONTWRITEBYTECODE': '1'}
+        before = dict(environment)
+        dry_run = self.invoke_environment_probe(config, 'score', environment, dry_run=True)
+        self.assertEqual(dry_run['environment_overrides'], {'SCORE_MATTER_SA3_ROOT': str(runtime)})
+        for state in ('missing', 'present'):
+            with self.subTest(state=state):
+                if state == 'present':
+                    runtime.mkdir()
+                result = self.invoke_environment_probe(config, 'score', environment)
+                self.assertEqual(result['runtime'], str(runtime))
+                self.assertEqual(result['runtime_state'], state)
+                self.assertEqual(result['sentinel'], 'preserved')
+                self.assertIsNone(result['pythonpath'])
+                self.assertEqual(result['argv'][0], 'audio')
+                self.assertEqual(result['argv'][-1], 'doctor')
+                self.assertEqual(environment, before)
+        self.assertEqual(list(runtime.iterdir()), [])
+        self.assertFalse((self.project / 'artifacts').exists())
+
+    def test_real_score_child_without_runtime_config_preserves_ambient_or_unset_value(self):
+        config = self.prepare_environment_probe()
+        environment = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'}
+        for value in (str(self.root / 'ambient runtime'), None):
+            with self.subTest(value=value):
+                if value is None:
+                    environment.pop('SCORE_MATTER_SA3_ROOT', None)
+                else:
+                    environment['SCORE_MATTER_SA3_ROOT'] = value
+                self.assertEqual(self.plan(product='score')['environment_overrides'], {})
+                result = self.invoke_environment_probe(config, 'score', environment)
+                self.assertEqual(result['runtime'], value)
+
+    def test_real_core_and_sonic_children_do_not_inherit_score_configuration_override(self):
+        self.config['sa3_runtime_root'] = str(self.root / 'score-only')
+        config = self.prepare_environment_probe()
+        environment = {**os.environ, 'SCORE_MATTER_SA3_ROOT': 'ambient-value', 'PYTHONDONTWRITEBYTECODE': '1'}
+        for product in ('core', 'sonic'):
+            with self.subTest(product=product):
+                plan = self.invoke_environment_probe(config, product, environment, dry_run=True)
+                self.assertEqual(plan['environment_overrides'], {})
+                result = self.invoke_environment_probe(config, product, environment)
+                self.assertEqual(result['runtime'], 'ambient-value')
 
     def test_import_uses_caller_file_even_if_tool_has_same_name(self):
         (self.nested/'input.wav').write_bytes(b'consumer')

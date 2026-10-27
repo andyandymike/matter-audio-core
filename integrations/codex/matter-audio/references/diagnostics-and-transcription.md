@@ -8,6 +8,9 @@ start a child process or contact a server. Availability checks do not prove that
 a model is loaded or running on a particular device; those states remain unknown.
 Report individual checks and their remedies rather than interpreting `succeeded`
 as proof that every optional backend is available.
+The Score launcher's configured `sa3_runtime_root` selects the same runtime for
+diagnosis and shared audio actions. A missing configured directory is reported
+by doctor without installation. The override is local to that child process.
 
 ## Signal issue locations
 
