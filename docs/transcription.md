@@ -19,10 +19,11 @@ The sequence is **resolve → explicitly execute → inspect transcript → expo
 Use `--product score` or `--product sonic` when opening a product-owned workspace.
 The source must already be registered through that product's authoring tools.
 
-Only execution uploads audio to the chosen endpoint. Preview, local doctor,
+Only `transcribe execute` uploads audio to the chosen endpoint. Preview, local doctor,
 completed-result replay and export are offline. Secrets are read from a named
 environment variable. The client does not install or preload remote models. Outputs are
-JSON and optional SRT/VTT, not modified audio, feedback, or a new selection.
+JSON and optional SRT/VTT. Client 0.2.0 also supports [offline transcript editing](transcript-editing.md)
+using those saved assets. It never writes feedback or selects a new version automatically.
 
 The adapter preserves the source digest, request identity, service declaration,
 provider-reported model, original timing estimates, converted frame coordinates

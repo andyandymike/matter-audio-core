@@ -58,6 +58,7 @@ nav:
       - Local model adapters: model-adapters.md
       - Backend diagnostics: diagnostics.md
       - Optional transcription service: transcription.md
+      - Transcript editing and task evaluation: transcript-editing.md
   - Reference:
       - Architecture: architecture.md
       - PCM16 profile: pcm16-profile.md

@@ -29,7 +29,10 @@ Core 0.7 adds [signal issue locations](docs/quality.md) and [offline backend
 diagnostics](docs/diagnostics.md). ScoreMatter can reuse a saved SA3 proposal
 without another generation. A separately installed MIT [transcription client](docs/transcription.md)
 connects to an optional external VoiceStudio service and saves source-bound
-transcripts and subtitles. Core itself gains no model or service dependency.
+transcripts and subtitles. Its [offline editing workflow](docs/transcript-editing.md)
+uses saved word/segment timings for exact-source extraction and replacement,
+with immutable plans and a separate Agent-task evaluator. Core itself gains no
+model or service dependency.
 
 Core 0.6 adds [cue packages, loops, scene timelines and local search](docs/production.md):
 versioned cue/variant sets, exact batch delivery, RMS/peak matching, overlap-loop

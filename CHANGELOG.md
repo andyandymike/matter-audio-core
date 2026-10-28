@@ -1,5 +1,19 @@
 # Changelog
 
+## Optional transcription client 0.2.0 — 2026-10-28
+
+Core remains at 0.7.0; this is a separately installed adapter release.
+
+- Offline transcript inspection and immutable edit plans select exact words,
+  segments or inclusive index ranges from an existing transcription receipt.
+- Extraction and duration-preserving replacement reuse Core trim/splice,
+  exact source identity, explicit protected regions and digest-bound execution.
+  Timings remain estimates; editing adds no model calls or automatic selection.
+- Synthetic task fixtures, a fresh-process scripted baseline and separate
+  prepare/grade modes verify saved edits, quality reports, selection and exports.
+  Missing execution evidence stays unknown; scripted success is not an LLM or
+  listening-quality result.
+
 ## 0.7.0 — 2026-10-27
 
 - Frame-localized advisory signal reports through `quality` and `quality/v1`,

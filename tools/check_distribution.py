@@ -99,6 +99,8 @@ def main() -> None:
                          "integrations/voicestudio/pyproject.toml", "integrations/voicestudio/LICENSE",
                          "integrations/voicestudio/README.md", "integrations/voicestudio/config.example.json",
                          "integrations/voicestudio/tests/test_transcription.py",
+                         "integrations/voicestudio/tests/test_editing.py",
+                         "integrations/voicestudio/tools/evaluate_editing.py", "docs/transcript-editing.md",
                          "integrations/voicestudio/MANIFEST.in", "tools/check_adapter_distribution.py"})
         require(required <= relative, f"Missing sdist files: {sorted(required - relative)}")
         for name, data in {"LICENSE": license_bytes, **{"src/" + k: v for k, v in {**modules, **resources}.items()}}.items():

@@ -11,6 +11,7 @@ from matter_audio_core.errors import AudioError
 
 from . import __version__, client
 from .service import LIMITATIONS, REQUEST_SCHEMA, TranscriptionService, export_result
+from . import editing
 
 PRODUCTS = {"core": "matter-audio", "score": "score-matter", "sonic": "sonic-matter"}
 
@@ -59,15 +60,28 @@ def main(argv=None):
             if name == "execute":
                 command.add_argument("--expected-resolution-digest", required=True)
         transcribing.add_parser("show").add_argument("request_id")
+        inspecting = transcribing.add_parser("inspect", help="Read indexed word or segment timing without contacting the service.")
+        inspecting.add_argument("request_id")
+        inspecting.add_argument("--unit", choices=("word", "segment"), default="word")
+        inspecting.add_argument("--offset", type=int, default=0)
+        inspecting.add_argument("--limit", type=int, default=50)
         exporting = transcribing.add_parser("export")
         exporting.add_argument("request_id")
         exporting.add_argument("--format", choices=("json", "srt", "vtt"), required=True)
         exporting.add_argument("--output", type=Path, required=True)
+        edits = commands.add_parser("edit", help="Plan and execute offline transcript-guided PCM edits.").add_subparsers(dest="action", required=True)
+        edits.add_parser("plan").add_argument("--request", type=Path, required=True)
+        edits.add_parser("show").add_argument("asset_id")
+        executing = edits.add_parser("execute")
+        executing.add_argument("asset_id")
+        executing.add_argument("--expected-plan-digest", required=True)
         args = parser.parse_args([item for item in (sys.argv[1:] if argv is None else argv) if item != "--json"])
         if args.command == "capabilities":
             result = {"schema": "matter-voicestudio-capabilities/v1", "adapter_version": __version__,
                       "transport": "cli-json/v1", "request_schema": REQUEST_SCHEMA,
-                      "commands": ["doctor", "transcribe resolve", "transcribe execute", "transcribe show", "transcribe export"],
+                      "commands": ["doctor", "transcribe resolve", "transcribe execute", "transcribe show", "transcribe export",
+                                   "transcribe inspect", "edit plan", "edit show", "edit execute"],
+                      "editing": editing.capabilities(),
                       "formats": ["json", "srt", "vtt"], "audio_model_calls": 0, "network_requests": 0,
                       "limitations": LIMITATIONS}
         elif args.command == "doctor":
@@ -76,7 +90,16 @@ def main(argv=None):
             if args.workspace is None:
                 raise AudioError("workspace_required", "Pass the existing audio workspace with --workspace.")
             store = ArtifactStore(args.workspace, product=PRODUCTS[args.product])
-            if args.action == "show":
+            if args.command == "edit":
+                if args.action == "plan":
+                    result = editing.plan(store, read_json(args.request))
+                elif args.action == "show":
+                    result = editing.show(store, args.asset_id)
+                else:
+                    result = editing.execute(store, args.asset_id, args.expected_plan_digest)
+            elif args.action == "inspect":
+                result = editing.inspect_transcript(store, args.request_id, args.unit, args.offset, args.limit)
+            elif args.action == "show":
                 result = store.show_request(args.request_id)
                 if result.get("binding", {}).get("operation") != "voicestudio.transcribe/v1":
                     raise AudioError("transcription_unavailable", "Request is not a transcription.")

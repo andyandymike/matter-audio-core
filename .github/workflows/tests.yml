@@ -76,6 +76,8 @@ jobs:
           subprocess.run([sys.executable, '-m', 'pip', 'check'], check=True)
       - name: Optional adapter contract tests without models
         run: python -m unittest discover -s integrations/voicestudio/tests -v
+      - name: Scripted transcript editing task baseline without models
+        run: python integrations/voicestudio/tools/evaluate_editing.py --output-dir .local/transcript-edit-baseline
       - name: Offline backend diagnostic entry points
         run: |
           matter-audio doctor

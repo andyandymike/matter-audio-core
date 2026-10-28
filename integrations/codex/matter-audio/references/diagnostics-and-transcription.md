@@ -3,8 +3,9 @@
 ## Offline diagnosis
 
 Use `run_audio.py --product core|score|sonic -- doctor --json` to inspect the
-configured environment. This does not create an audio workspace, load a model,
-start a child process or contact a server. Availability checks do not prove that
+configured environment. The launcher starts the configured product CLI; doctor
+itself creates no workspace, loads no model, starts no probe subprocess and
+contacts no server. Availability checks do not prove that
 a model is loaded or running on a particular device; those states remain unknown.
 Report individual checks and their remedies rather than interpreting `succeeded`
 as proof that every optional backend is available.
@@ -69,3 +70,41 @@ inspect the saved receipt instead of automatically creating a replacement reques
 
 Our client is MIT. The separately deployed service and models retain their own
 licenses; no upstream VoiceStudio application code is included in Core.
+
+## Offline transcript-guided editing
+
+With client 0.2.0 installed in the configured Core Python, use
+`<core-python> -m matter_audio_voicestudio --workspace <project-workspace>`.
+This is a separate CLI; `run_audio.py` does not route adapter subcommands. Add
+`--product score|sonic` for an existing product workspace. These commands need no
+service configuration and send no audio:
+
+```text
+transcribe inspect <transcription-request-id> --unit word --offset 0 --limit 50
+edit plan --request <edit.json>
+edit show <plan-asset-id>
+edit execute <plan-asset-id> --expected-plan-digest <plan_digest>
+```
+
+Query `capabilities.editing.request_schema`. Read the Core checkout's
+`docs/transcript-editing.md` for full examples. Bind the exact successful
+transcription request, transcript asset and source asset. Select a one-based
+entry index, inclusive index range or exact whole-entry text with its one-based
+occurrence. Inspection pagination offsets are zero-based; follow `next_offset`
+for more entries. Missing timings or ambiguous repeated text require a more
+explicit selection, never guessed coordinates. Inspect the minimum-start to
+maximum-end PCM envelope, padding and overlap warnings before executing.
+
+Extraction uses Core trim; replacement uses duration-preserving splice with a
+registered, format-compatible replacement and explicit offset/transition frames.
+Neither generates replacement speech or closes a deletion gap. Include the current
+session's explicit protection reference when preservation is required. Check the
+new output, then select/export only as requested. The saved plan carries transcript
+evidence; keep its ID with the Core execution receipt. Completed actions replay,
+pending actions stay pending, and changed protection can reject a new execution.
+
+Provider word boundaries remain unverified estimates. Do not describe an exact
+PCM edit as proof of correct pronunciation or a natural speech join. Respect
+deferred listening. The source distribution's `tools/evaluate_editing.py` can
+prepare synthetic tasks and grade saved artifacts separately from its scripted
+baseline; baseline success is not an actual LLM evaluation.

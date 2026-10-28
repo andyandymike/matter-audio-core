@@ -52,7 +52,9 @@ def main():
         prefix = prefixes.pop()
         required = {name: (ROOT / name).read_bytes() for name in (
             "LICENSE", "README.md", "pyproject.toml", "MANIFEST.in", "config.example.json",
-            "tests/test_transcription.py")}
+            "tests/test_transcription.py", "tests/test_editing.py", "tools/evaluate_editing.py")}
+        required.update({p.relative_to(ROOT).as_posix(): p.read_bytes()
+                         for p in (ROOT / "tests").glob("test_*.py")})
         required.update({"src/" + name: data for name, data in modules.items()})
         for name, expected in required.items():
             member = archive.extractfile(f"{prefix}/{name}")

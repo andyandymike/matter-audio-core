@@ -1,3 +1,4 @@
 include LICENSE README.md config.example.json
 recursive-include tests *.py
+recursive-include tools *.py
 global-exclude *.py[cod] *.local.json

@@ -170,3 +170,7 @@ Treat signal flags as inspection hints, not a listening verdict. The optional
 MIT transcription client connects to an independently deployed service; only
 explicit execution uploads the selected audio. Query capabilities before use,
 bind the preview digest, and preserve unknown remote outcomes without retries.
+Client 0.2 also supports offline transcript inspection and source-bound extract
+or replace plans using saved timings. Read the same reference for its separate
+CLI, exact entry selection, protection and explicit plan execution. Timings remain
+estimates; these edits neither generate speech nor establish acoustic accuracy.

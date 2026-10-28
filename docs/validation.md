@@ -93,6 +93,16 @@ machine paths and references to user-supplied media.
 
 ## What passing means
 
+The optional client's transcript editing tests cover exact source/receipt
+identity, normalized coordinates, repeated text, malformed selections, bounded
+inspection and plan size, deterministic trim/splice, protection, replay and
+interrupted requests. Its separate `integrations/voicestudio/tools/evaluate_editing.py`
+prepares synthetic Agent tasks, runs a fresh-CLI scripted baseline, or grades
+existing results without executing task operations. Saved artifact checks and
+independent PCM expectations are separate from unobserved read-only steps,
+transient errors and unknown external Agent timing/tool counts. See
+[transcript editing and evaluation](transcript-editing.md) for commands and limits.
+
 Passing tests demonstrates the tested sample transformations, schema handling
 and filesystem behavior. It does not establish listening acceptance, subjective
 quality, game integration or distribution rights for source recordings.

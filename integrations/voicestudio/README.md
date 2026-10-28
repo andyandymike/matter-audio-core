@@ -7,7 +7,9 @@ weights. Installing Matter Audio Core alone does not install or activate it.
 The client uploads an explicitly selected, snapshotted PCM16 WAV only on
 `transcribe execute`. It saves a source-bound transcript and, when segment
 timings exist, SRT/VTT assets in the same Core, ScoreMatter or SonicMatter
-workspace. It never selects audio, writes listening feedback or changes WAVs.
+workspace. Version 0.2 also uses saved transcripts to plan and execute offline
+extraction or replacement through Core's deterministic PCM operations. It never
+selects audio or writes listening feedback automatically; source WAVs remain immutable.
 
 From the Matter Audio Core checkout, install Core and then this package into
 the intended Python environment:
@@ -102,6 +104,36 @@ test. Run the tests without any configured model:
 ```sh
 python -m unittest discover -s integrations/voicestudio/tests -v
 ```
+
+## Offline editing and task evaluation
+
+After a successful transcription, use `transcribe inspect <request-id>` to read
+indexed word or segment entries. `edit plan --request <file>` saves a source-bound
+selection and the resolved Core trim/splice action; `edit show <plan-asset-id>`
+inspects it, and `edit execute <plan-asset-id> --expected-plan-digest <hex>` applies
+exactly that plan. These commands need no service configuration or network.
+They can read transcripts saved by client 0.1.0 with Core 0.7.0.
+
+See the [complete editing guide](https://andyandymike.github.io/matter-audio-core/transcript-editing/)
+for request examples, estimated timing limitations, protection and replay.
+Re-executing a transcription request under a changed adapter version may conflict
+with its original binding; inspect the saved result instead of retranscribing it.
+
+The evaluator can run a scripted CLI baseline or prepare tasks for an external
+Agent and later grade only the existing artifacts:
+
+```sh
+python integrations/voicestudio/tools/evaluate_editing.py --output-dir /absolute/new-baseline
+python integrations/voicestudio/tools/evaluate_editing.py --prepare-only --output-dir /absolute/new-agent-run
+python integrations/voicestudio/tools/evaluate_editing.py --grade-existing --output-dir /absolute/new-agent-run
+```
+
+Run from the Core checkout with both packages installed. Paths must be new for
+preparation/baseline. The public `tasks.json` supplies task briefs and exact IDs.
+Only synthetic PCM and local fixture transcripts are used; no ASR service is
+called. Scripted completion verifies plumbing and the rubric, not LLM ability.
+Artifact-only grading cannot establish missing transient errors, read-only
+inspection steps, tool counts or elapsed execution time; those remain unknown.
 
 ## Licensing
 
